@@ -1,11 +1,14 @@
 const API_KEY = 'as_sk_66a3631c2e8124cebdd66dd45f9aec13';
 
-async function testDifferentEndpoints() {
+async function testEndpoints() {
   const endpoints = [
-    'https://api.anysearch.com/mcp',
-    'https://api.anysearch.com/api/search',
     'https://api.anysearch.com/v1/search',
-    'https://api.anysearch.com/search',
+    'https://api.anysearch.com/v1/extract',
+    'https://api.anysearch.com/v1/fetch',
+    'https://api.anysearch.com/v1/query',
+    'https://api.anysearch.com/v1/content',
+    'https://api.anysearch.com/api/extract',
+    'https://api.anysearch.com/api/fetch',
   ];
 
   for (const url of endpoints) {
@@ -18,53 +21,43 @@ async function testDifferentEndpoints() {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${API_KEY}`,
         },
-        body: JSON.stringify({ query: 'test', max_results: 3 }),
+        body: JSON.stringify({ url: 'https://www.example.com' }),
       });
       
       console.log('Status:', response.status);
       const text = await response.text();
-      console.log('Response:', text.substring(0, 500));
+      console.log('Response:', text.substring(0, 300));
     } catch (e) {
       console.log('Error:', e.message);
     }
   }
 }
 
-async function testJsonRpcMethods() {
-  const url = 'https://api.anysearch.com/mcp';
-  const methods = [
-    { method: 'call', params: { name: 'search', arguments: { query: 'test', max_results: 3 } } },
-    { method: 'invoke', params: { function: 'search', args: { query: 'test', max_results: 3 } } },
-    { method: 'execute', params: { command: 'search', options: { query: 'test', max_results: 3 } } },
-    { method: 'list', params: {} },
-    { method: 'describe', params: {} },
-    { method: 'info', params: {} },
-  ];
-
-  for (const { method, params } of methods) {
-    console.log(`\n=== Testing method: ${method} ===`);
+async function testSearchWithMoreParams() {
+  console.log('\n=== Testing search with extract param ===');
+  
+  try {
+    const response = await fetch('https://api.anysearch.com/v1/search', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${API_KEY}`,
+      },
+      body: JSON.stringify({ 
+        query: 'AI Agent', 
+        max_results: 3,
+        extract_content: true
+      }),
+    });
     
-    try {
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${API_KEY}`,
-        },
-        body: JSON.stringify({
-          jsonrpc: '2.0',
-          method,
-          params,
-          id: 1,
-        }),
-      });
-      
-      const text = await response.text();
-      console.log('Response:', text.substring(0, 500));
-    } catch (e) {
-      console.log('Error:', e.message);
+    const data = await response.json();
+    console.log('Response:', JSON.stringify(data, null, 2));
+    if (data.data?.results && data.data.results[0]) {
+      console.log('\nFirst result keys:', Object.keys(data.data.results[0]));
     }
+  } catch (e) {
+    console.log('Error:', e.message);
   }
 }
 
-testDifferentEndpoints().then(() => testJsonRpcMethods());
+testEndpoints().then(() => testSearchWithMoreParams());

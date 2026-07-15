@@ -18,6 +18,13 @@
 body {
   background: #ffffff;
   min-height: 100vh;
+  overflow-x: hidden;
+}
+
+#root {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
 }
 
 ::-webkit-scrollbar {

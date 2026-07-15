@@ -46,7 +46,7 @@ export function SearchBar() {
   };
 
   return (
-    <div className="w-full max-w-3xl mx-auto">
+    <div className="w-full max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
       <div className="text-center mb-8">
         <h1 className="text-3xl font-semibold text-gray-800 mb-2">
           锐机智能检索
@@ -63,7 +63,7 @@ export function SearchBar() {
           onBlur={() => setIsFocused(false)}
           onKeyPress={handleKeyPress}
           placeholder="输入搜索关键词..."
-          className={`flex-1 bg-transparent text-gray-800 placeholder-gray-400 text-base py-2.5 px-4 outline-none ${
+          className={`flex-1 bg-transparent text-gray-800 placeholder-gray-400 text-base py-2.5 px-4 outline-none min-w-0 ${
             isFocused ? '' : ''
           }`}
         />
@@ -71,7 +71,7 @@ export function SearchBar() {
         {query && (
           <button
             onClick={() => setQuery('')}
-            className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
+            className="p-2 text-gray-400 hover:text-gray-600 transition-colors shrink-0"
           >
             清除
           </button>
@@ -80,7 +80,7 @@ export function SearchBar() {
         <button
           onClick={() => handleSearch()}
           disabled={!query.trim()}
-          className={`ml-1 px-5 py-2 rounded-md font-medium transition-all duration-300 ${
+          className={`ml-1 px-5 py-2 rounded-md font-medium transition-all duration-300 shrink-0 ${
             query.trim()
               ? 'bg-gray-800 text-white hover:bg-gray-700'
               : 'bg-gray-100 text-gray-400 cursor-not-allowed'
