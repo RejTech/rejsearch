@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useSearchStore } from '../store/searchStore';
+import { summarizeContent } from '../lib/glm';
 
 export function SearchResults() {
   const {
@@ -9,13 +10,30 @@ export function SearchResults() {
     error,
     selectedResult,
     selectResult,
+    summary,
+    isSummarizing,
+    setSummary,
+    setSummarizing,
   } = useSearchStore();
 
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
 
-  const handleResultClick = (result: typeof results[0], index: number) => {
+  const handleResultClick = async (result: typeof results[0], index: number) => {
     setActiveIndex(index);
     selectResult(result);
+    setSummary('');
+
+    if (result.content) {
+      setSummarizing(true);
+      try {
+        const s = await summarizeContent(result.title, result.content);
+        setSummary(s);
+      } catch {
+        setSummary('AI 摘要生成失败，请稍后重试');
+      } finally {
+        setSummarizing(false);
+      }
+    }
   };
 
   const formatDate = (timestamp?: string) => {
@@ -34,6 +52,8 @@ export function SearchResults() {
   const closeModal = () => {
     selectResult(null);
     setActiveIndex(null);
+    setSummary('');
+    setSummarizing(false);
   };
 
   if (isLoading) {
@@ -75,6 +95,65 @@ export function SearchResults() {
   if (results.length === 0) {
     return null;
   }
+
+  const renderDetail = () => {
+    if (!selectedResult) {
+      return (
+        <div className="text-center py-12">
+          <p className="text-gray-400 text-sm">点击搜索结果查看详情</p>
+        </div>
+      );
+    }
+
+    return (
+      <>
+        <h4 className="text-sm font-medium text-gray-700 mb-2 line-clamp-2">
+          {selectedResult.title}
+        </h4>
+        <p className="text-xs text-gray-400 mb-4 font-mono truncate">
+          {selectedResult.url}
+        </p>
+
+        {isSummarizing && (
+          <div className="mb-4 p-3 bg-gray-50 rounded-lg">
+            <p className="text-xs text-gray-500 mb-2">AI 正在生成摘要...</p>
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin" />
+              <span className="text-xs text-gray-400">GLM-4-Flash 思考中</span>
+            </div>
+          </div>
+        )}
+
+        {summary && (
+          <div className="mb-4 p-3 bg-blue-50 border border-blue-100 rounded-lg">
+            <p className="text-xs text-blue-600 font-medium mb-1.5">AI 摘要</p>
+            <p className="text-sm text-gray-700 leading-relaxed">{summary}</p>
+          </div>
+        )}
+
+        <div className="max-h-[400px] overflow-y-auto">
+          {selectedResult.content ? (
+            <div className="whitespace-pre-wrap text-gray-500 text-xs leading-relaxed break-all">
+              {selectedResult.content}
+            </div>
+          ) : (
+            <p className="text-gray-400 text-center py-8 text-sm">
+              暂无内容
+            </p>
+          )}
+        </div>
+
+        <a
+          href={selectedResult.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mt-4 block w-full text-center py-2 bg-gray-800 text-white text-sm rounded hover:bg-gray-700 transition-colors"
+        >
+          跳转到原页面
+        </a>
+      </>
+    );
+  };
 
   return (
     <div className="mt-8 px-4 sm:px-6 lg:px-8">
@@ -138,41 +217,7 @@ export function SearchResults() {
                 )}
               </div>
 
-              {selectedResult ? (
-                <>
-                  <h4 className="text-sm font-medium text-gray-700 mb-2 line-clamp-2">
-                    {selectedResult.title}
-                  </h4>
-                  <p className="text-xs text-gray-400 mb-4 font-mono truncate">
-                    {selectedResult.url}
-                  </p>
-                  
-                  <div className="max-h-[500px] overflow-y-auto">
-                    {selectedResult.content ? (
-                      <div className="whitespace-pre-wrap text-gray-600 text-sm leading-relaxed break-all">
-                        {selectedResult.content}
-                      </div>
-                    ) : (
-                      <p className="text-gray-400 text-center py-8 text-sm">
-                        暂无内容
-                      </p>
-                    )}
-                  </div>
-
-                  <a
-                    href={selectedResult.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="mt-4 block w-full text-center py-2 bg-gray-800 text-white text-sm rounded hover:bg-gray-700 transition-colors"
-                  >
-                    跳转到原页面
-                  </a>
-                </>
-              ) : (
-                <div className="text-center py-12">
-                  <p className="text-gray-400 text-sm">点击搜索结果查看详情</p>
-                </div>
-              )}
+              {renderDetail()}
             </div>
           </div>
         </div>
@@ -195,18 +240,33 @@ export function SearchResults() {
               </button>
             </div>
 
-            <div className="p-4 border-b border-gray-50 shrink-0">
+            <div className="flex-1 overflow-y-auto p-4">
               <h4 className="text-base font-medium text-gray-800 mb-2 line-clamp-2">
                 {selectedResult.title}
               </h4>
-              <p className="text-xs text-gray-400 font-mono truncate">
+              <p className="text-xs text-gray-400 font-mono truncate mb-4">
                 {selectedResult.url}
               </p>
-            </div>
 
-            <div className="flex-1 overflow-y-auto p-4">
+              {isSummarizing && (
+                <div className="mb-4 p-3 bg-gray-50 rounded-lg">
+                  <p className="text-xs text-gray-500 mb-2">AI 正在生成摘要...</p>
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin" />
+                    <span className="text-xs text-gray-400">GLM-4-Flash 思考中</span>
+                  </div>
+                </div>
+              )}
+
+              {summary && (
+                <div className="mb-4 p-3 bg-blue-50 border border-blue-100 rounded-lg">
+                  <p className="text-xs text-blue-600 font-medium mb-1.5">AI 摘要</p>
+                  <p className="text-sm text-gray-700 leading-relaxed">{summary}</p>
+                </div>
+              )}
+
               {selectedResult.content ? (
-                <div className="whitespace-pre-wrap text-gray-600 text-sm leading-relaxed break-all">
+                <div className="whitespace-pre-wrap text-gray-500 text-xs leading-relaxed break-all">
                   {selectedResult.content}
                 </div>
               ) : (
@@ -232,12 +292,8 @@ export function SearchResults() {
 
       <style>{`
         @keyframes slide-up {
-          from {
-            transform: translateY(100%);
-          }
-          to {
-            transform: translateY(0);
-          }
+          from { transform: translateY(100%); }
+          to { transform: translateY(0); }
         }
         .animate-slide-up {
           animation: slide-up 0.3s ease-out;

@@ -11,6 +11,8 @@ interface SearchStore {
   selectedResult: SearchResult | null;
   extractedContent: string;
   isExtracting: boolean;
+  summary: string;
+  isSummarizing: boolean;
   
   setQuery: (query: string) => void;
   setResults: (results: SearchResult[], total: number) => void;
@@ -22,6 +24,8 @@ interface SearchStore {
   selectResult: (result: SearchResult | null) => void;
   setExtractedContent: (content: string) => void;
   setExtracting: (extracting: boolean) => void;
+  setSummary: (summary: string) => void;
+  setSummarizing: (summarizing: boolean) => void;
 }
 
 const STORAGE_KEY = 'anysearch_history';
@@ -53,6 +57,8 @@ export const useSearchStore = create<SearchStore>((set, get) => ({
   selectedResult: null,
   extractedContent: '',
   isExtracting: false,
+  summary: '',
+  isSummarizing: false,
 
   setQuery: (query) => set({ query }),
 
@@ -86,4 +92,6 @@ export const useSearchStore = create<SearchStore>((set, get) => ({
   setExtractedContent: (content) => set({ extractedContent: content }),
 
   setExtracting: (extracting) => set({ isExtracting: extracting }),
+  setSummary: (summary) => set({ summary }),
+  setSummarizing: (summarizing) => set({ isSummarizing: summarizing }),
 }));
