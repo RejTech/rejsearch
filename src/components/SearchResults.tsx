@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { ExternalLink, Clock, Globe, ChevronRight, Loader2, X } from 'lucide-react';
 import { useSearchStore } from '../store/searchStore';
 import { extract } from '../lib/anysearch';
 
@@ -54,15 +53,15 @@ export function SearchResults() {
           {[1, 2, 3].map((i) => (
             <div
               key={i}
-              className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl p-6 animate-pulse"
+              className="bg-gray-50 border border-gray-100 rounded-lg p-6 animate-pulse"
               style={{ animationDelay: `${i * 100}ms` }}
             >
-              <div className="h-5 bg-white/20 rounded w-3/4 mb-3" />
-              <div className="h-4 bg-white/15 rounded w-full mb-3" />
-              <div className="h-4 bg-white/15 rounded w-5/6 mb-4" />
+              <div className="h-5 bg-gray-200 rounded w-3/4 mb-3" />
+              <div className="h-4 bg-gray-150 rounded w-full mb-3" />
+              <div className="h-4 bg-gray-150 rounded w-5/6 mb-4" />
               <div className="flex items-center gap-4">
-                <div className="h-3 bg-white/10 rounded w-20" />
-                <div className="h-3 bg-white/10 rounded w-32" />
+                <div className="h-3 bg-gray-100 rounded w-20" />
+                <div className="h-3 bg-gray-100 rounded w-32" />
               </div>
             </div>
           ))}
@@ -74,8 +73,8 @@ export function SearchResults() {
   if (error) {
     return (
       <div className="mt-8 max-w-4xl mx-auto">
-        <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-6 text-center">
-          <p className="text-red-400">{error}</p>
+        <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
+          <p className="text-red-600">{error}</p>
         </div>
       </div>
     );
@@ -88,60 +87,43 @@ export function SearchResults() {
   return (
     <div className="mt-8 max-w-6xl mx-auto">
       <div className="flex items-center justify-between mb-6">
-        <p className="text-gray-300">
-          找到 <span className="text-accent-400 font-bold">{total}</span> 条结果
+        <p className="text-gray-500 text-sm">
+          找到 <span className="text-gray-800 font-semibold">{total}</span> 条结果
         </p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 space-y-4">
+        <div className="lg:col-span-2 space-y-3">
           {results.map((result, index) => (
             <div
               key={index}
               onClick={() => handleResultClick(result, index)}
-              className={`bg-white/5 backdrop-blur-xl border rounded-xl p-6 cursor-pointer transition-all duration-300 group ${
+              className={`bg-white border rounded-lg p-5 cursor-pointer transition-all duration-200 ${
                 activeIndex === index
-                  ? 'border-accent-500 shadow-lg shadow-accent-500/10'
-                  : 'border-white/10 hover:border-accent-500/50 hover:shadow-md'
+                  ? 'border-gray-400 shadow-md'
+                  : 'border-gray-100 hover:border-gray-300 hover:shadow-sm'
               }`}
             >
               <div className="flex items-start justify-between gap-4">
                 <div className="flex-1">
-                  <h3 className="text-lg font-semibold text-white mb-2 group-hover:text-accent-300 transition-colors">
+                  <h3 className="text-base font-medium text-gray-800 mb-2 hover:text-gray-600 transition-colors">
                     {result.title}
                   </h3>
-                  <p className="text-gray-400 text-sm leading-relaxed mb-4 line-clamp-3">
+                  <p className="text-gray-500 text-sm leading-relaxed mb-3 line-clamp-2">
                     {result.snippet}
                   </p>
-                  <div className="flex items-center gap-4 text-xs text-gray-500">
+                  <div className="flex items-center gap-4 text-xs text-gray-400">
                     {result.source && (
-                      <span className="flex items-center gap-1">
-                        <Globe className="w-3 h-3" />
-                        {result.source}
-                      </span>
+                      <span>{result.source}</span>
                     )}
                     {result.timestamp && (
-                      <span className="flex items-center gap-1">
-                        <Clock className="w-3 h-3" />
-                        {formatDate(result.timestamp)}
-                      </span>
+                      <span>{formatDate(result.timestamp)}</span>
                     )}
                   </div>
                 </div>
-                <div className="flex flex-col items-end">
-                  <a
-                    href={result.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="p-2 text-gray-500 hover:text-accent-400 transition-colors"
-                  >
-                    <ExternalLink className="w-4 h-4" />
-                  </a>
-                  <ChevronRight className="w-5 h-5 text-gray-600 group-hover:text-accent-400 group-hover:translate-x-1 transition-all" />
-                </div>
               </div>
-              <div className="mt-4 pt-4 border-t border-white/5">
-                <p className="text-xs text-gray-500 font-mono truncate">
+              <div className="mt-3 pt-3 border-t border-gray-50">
+                <p className="text-xs text-gray-400 font-mono truncate">
                   {result.url}
                 </p>
               </div>
@@ -150,9 +132,9 @@ export function SearchResults() {
         </div>
 
         <div className="lg:col-span-1">
-          <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl p-4 sticky top-4">
+          <div className="bg-white border border-gray-100 rounded-lg p-4 sticky top-4">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-white">内容详情</h3>
+              <h3 className="text-base font-medium text-gray-800">内容详情</h3>
               {selectedResult && (
                 <button
                   onClick={() => {
@@ -160,48 +142,43 @@ export function SearchResults() {
                     setActiveIndex(null);
                     setExtractedContent('');
                   }}
-                  className="p-1 text-gray-400 hover:text-white transition-colors"
+                  className="text-gray-400 text-xs hover:text-gray-600 transition-colors"
                 >
-                  <X className="w-4 h-4" />
+                  关闭
                 </button>
               )}
             </div>
 
             {selectedResult ? (
               <>
-                <h4 className="text-sm font-medium text-accent-300 mb-2 line-clamp-2">
+                <h4 className="text-sm font-medium text-gray-700 mb-2 line-clamp-2">
                   {selectedResult.title}
                 </h4>
-                <p className="text-xs text-gray-500 mb-4 font-mono truncate">
+                <p className="text-xs text-gray-400 mb-4 font-mono truncate">
                   {selectedResult.url}
                 </p>
                 
                 {isExtracting ? (
                   <div className="flex items-center justify-center py-12">
-                    <Loader2 className="w-6 h-6 text-accent-400 animate-spin" />
+                    <div className="w-5 h-5 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin" />
                   </div>
                 ) : (
-                  <div className="max-h-[600px] overflow-y-auto">
-                    <div className="prose prose-invert prose-sm max-w-none">
-                      {extractedContent ? (
-                        <div className="whitespace-pre-wrap text-gray-300 text-sm leading-relaxed">
-                          {extractedContent}
-                        </div>
-                      ) : (
-                        <p className="text-gray-500 text-center py-8">
-                          点击搜索结果查看内容
-                        </p>
-                      )}
-                    </div>
+                  <div className="max-h-[500px] overflow-y-auto">
+                    {extractedContent ? (
+                      <div className="whitespace-pre-wrap text-gray-600 text-sm leading-relaxed">
+                        {extractedContent}
+                      </div>
+                    ) : (
+                      <p className="text-gray-400 text-center py-8 text-sm">
+                        点击搜索结果查看内容
+                      </p>
+                    )}
                   </div>
                 )}
               </>
             ) : (
               <div className="text-center py-12">
-                <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-white/5 flex items-center justify-center">
-                  <ExternalLink className="w-8 h-8 text-gray-600" />
-                </div>
-                <p className="text-gray-500">点击搜索结果查看详情</p>
+                <p className="text-gray-400 text-sm">点击搜索结果查看详情</p>
               </div>
             )}
           </div>
