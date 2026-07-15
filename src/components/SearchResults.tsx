@@ -8,7 +8,7 @@ function parseOverviewSummary(text: string, results: SearchResult[]): string {
     const index = parseInt(numStr, 10) - 1;
     if (index >= 0 && index < results.length) {
       const result = results[index];
-      return `<a href="${result.url}" target="_blank" rel="noopener noreferrer" class="underline decoration-blue-500 decoration-2 underline-offset-2 text-blue-600 hover:text-blue-700 hover:decoration-blue-600 transition-colors"><sup class="text-xs font-medium">${numStr}</sup></a>`;
+      return `<a href="${result.url}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-blue-100 text-blue-600 text-xs font-medium hover:bg-blue-200 hover:text-blue-700 transition-colors ml-0.5">${numStr}</a>`;
     }
     return match;
   });

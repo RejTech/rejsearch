@@ -86,7 +86,6 @@ export default function Home() {
             <div className="flex items-center justify-between p-4 border-b border-gray-100 shrink-0">
               <div className="flex items-center gap-2">
                 <h3 className="text-base font-medium text-gray-800">本项目许可证</h3>
-                <span className="px-2 py-0.5 bg-blue-100 text-blue-600 text-xs rounded-full">AI</span>
               </div>
               <button
                 onClick={() => {
