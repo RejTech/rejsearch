@@ -1,6 +1,18 @@
 import { useState } from 'react';
 import { useSearchStore } from '../store/searchStore';
 import { summarizeContent } from '../lib/glm';
+import { SearchResult } from '../lib/anysearch';
+
+function parseOverviewSummary(text: string, results: SearchResult[]): string {
+  return text.replace(/\[(\d+)\]/g, (match, numStr) => {
+    const index = parseInt(numStr, 10) - 1;
+    if (index >= 0 && index < results.length) {
+      const result = results[index];
+      return `<a href="${result.url}" target="_blank" rel="noopener noreferrer" class="underline decoration-blue-500 decoration-2 underline-offset-2 text-blue-600 hover:text-blue-700 hover:decoration-blue-600 transition-colors"><sup class="text-xs font-medium">${numStr}</sup></a>`;
+    }
+    return match;
+  });
+}
 
 export function SearchResults() {
   const {
@@ -177,7 +189,7 @@ export function SearchResults() {
             {isOverviewLoading && !overviewSummary ? (
               <p className="text-sm text-gray-400">GLM-4-Flash 正在分析所有搜索结果...</p>
             ) : (
-              <p className="text-sm text-gray-600 leading-relaxed">{overviewSummary}</p>
+              <p className="text-sm text-gray-600 leading-relaxed" dangerouslySetInnerHTML={{ __html: parseOverviewSummary(overviewSummary, results) }} />
             )}
           </div>
         )}
