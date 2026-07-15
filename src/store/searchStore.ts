@@ -9,10 +9,14 @@ interface SearchStore {
   error: string | null;
   searchHistory: string[];
   selectedResult: SearchResult | null;
-  extractedContent: string;
-  isExtracting: boolean;
-  summary: string;
-  isSummarizing: boolean;
+  
+  // 总体概括
+  overviewSummary: string;
+  isOverviewLoading: boolean;
+  
+  // 单条详情概括
+  detailSummary: string;
+  isDetailLoading: boolean;
   
   setQuery: (query: string) => void;
   setResults: (results: SearchResult[], total: number) => void;
@@ -22,10 +26,11 @@ interface SearchStore {
   removeFromHistory: (query: string) => void;
   clearHistory: () => void;
   selectResult: (result: SearchResult | null) => void;
-  setExtractedContent: (content: string) => void;
-  setExtracting: (extracting: boolean) => void;
-  setSummary: (summary: string) => void;
-  setSummarizing: (summarizing: boolean) => void;
+  
+  setOverviewSummary: (summary: string) => void;
+  setOverviewLoading: (loading: boolean) => void;
+  setDetailSummary: (summary: string) => void;
+  setDetailLoading: (loading: boolean) => void;
 }
 
 const STORAGE_KEY = 'anysearch_history';
@@ -55,10 +60,10 @@ export const useSearchStore = create<SearchStore>((set, get) => ({
   error: null,
   searchHistory: loadHistory(),
   selectedResult: null,
-  extractedContent: '',
-  isExtracting: false,
-  summary: '',
-  isSummarizing: false,
+  overviewSummary: '',
+  isOverviewLoading: false,
+  detailSummary: '',
+  isDetailLoading: false,
 
   setQuery: (query) => set({ query }),
 
@@ -89,9 +94,8 @@ export const useSearchStore = create<SearchStore>((set, get) => ({
 
   selectResult: (result) => set({ selectedResult: result }),
 
-  setExtractedContent: (content) => set({ extractedContent: content }),
-
-  setExtracting: (extracting) => set({ isExtracting: extracting }),
-  setSummary: (summary) => set({ summary }),
-  setSummarizing: (summarizing) => set({ isSummarizing: summarizing }),
+  setOverviewSummary: (overviewSummary) => set({ overviewSummary }),
+  setOverviewLoading: (isOverviewLoading) => set({ isOverviewLoading }),
+  setDetailSummary: (detailSummary) => set({ detailSummary }),
+  setDetailLoading: (isDetailLoading) => set({ isDetailLoading }),
 }));

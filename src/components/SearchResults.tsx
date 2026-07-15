@@ -10,10 +10,12 @@ export function SearchResults() {
     error,
     selectedResult,
     selectResult,
-    summary,
-    isSummarizing,
-    setSummary,
-    setSummarizing,
+    overviewSummary,
+    isOverviewLoading,
+    detailSummary,
+    isDetailLoading,
+    setDetailSummary,
+    setDetailLoading,
   } = useSearchStore();
 
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
@@ -21,17 +23,17 @@ export function SearchResults() {
   const handleResultClick = async (result: typeof results[0], index: number) => {
     setActiveIndex(index);
     selectResult(result);
-    setSummary('');
+    setDetailSummary('');
 
     if (result.content) {
-      setSummarizing(true);
+      setDetailLoading(true);
       try {
         const s = await summarizeContent(result.title, result.content);
-        setSummary(s);
+        setDetailSummary(s);
       } catch {
-        setSummary('AI 摘要生成失败，请稍后重试');
+        setDetailSummary('AI 摘要生成失败，请稍后重试');
       } finally {
-        setSummarizing(false);
+        setDetailLoading(false);
       }
     }
   };
@@ -52,8 +54,8 @@ export function SearchResults() {
   const closeModal = () => {
     selectResult(null);
     setActiveIndex(null);
-    setSummary('');
-    setSummarizing(false);
+    setDetailSummary('');
+    setDetailLoading(false);
   };
 
   if (isLoading) {
@@ -114,20 +116,19 @@ export function SearchResults() {
           {selectedResult.url}
         </p>
 
-        {isSummarizing && (
+        {isDetailLoading && (
           <div className="mb-4 p-3 bg-gray-50 rounded-lg">
-            <p className="text-xs text-gray-500 mb-2">AI 正在生成摘要...</p>
             <div className="flex items-center gap-2">
               <div className="w-4 h-4 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin" />
-              <span className="text-xs text-gray-400">GLM-4-Flash 思考中</span>
+              <span className="text-xs text-gray-500">GLM-4-Flash 正在生成摘要...</span>
             </div>
           </div>
         )}
 
-        {summary && (
+        {detailSummary && (
           <div className="mb-4 p-3 bg-blue-50 border border-blue-100 rounded-lg">
             <p className="text-xs text-blue-600 font-medium mb-1.5">AI 摘要</p>
-            <p className="text-sm text-gray-700 leading-relaxed">{summary}</p>
+            <p className="text-sm text-gray-700 leading-relaxed">{detailSummary}</p>
           </div>
         )}
 
@@ -158,11 +159,28 @@ export function SearchResults() {
   return (
     <div className="mt-8 px-4 sm:px-6 lg:px-8">
       <div className="max-w-6xl mx-auto">
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-4">
           <p className="text-gray-500 text-sm">
             找到 <span className="text-gray-800 font-semibold">{total}</span> 条结果
           </p>
         </div>
+
+        {/* AI 总体概括 */}
+        {(isOverviewLoading || overviewSummary) && (
+          <div className="mb-6 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-sm font-medium text-gray-700">AI 总体概括</span>
+              {isOverviewLoading && (
+                <div className="w-3.5 h-3.5 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin" />
+              )}
+            </div>
+            {isOverviewLoading && !overviewSummary ? (
+              <p className="text-sm text-gray-400">GLM-4-Flash 正在分析所有搜索结果...</p>
+            ) : (
+              <p className="text-sm text-gray-600 leading-relaxed">{overviewSummary}</p>
+            )}
+          </div>
+        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-3">
@@ -248,20 +266,19 @@ export function SearchResults() {
                 {selectedResult.url}
               </p>
 
-              {isSummarizing && (
+              {isDetailLoading && (
                 <div className="mb-4 p-3 bg-gray-50 rounded-lg">
-                  <p className="text-xs text-gray-500 mb-2">AI 正在生成摘要...</p>
                   <div className="flex items-center gap-2">
                     <div className="w-4 h-4 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin" />
-                    <span className="text-xs text-gray-400">GLM-4-Flash 思考中</span>
+                    <span className="text-xs text-gray-500">GLM-4-Flash 正在生成摘要...</span>
                   </div>
                 </div>
               )}
 
-              {summary && (
+              {detailSummary && (
                 <div className="mb-4 p-3 bg-blue-50 border border-blue-100 rounded-lg">
                   <p className="text-xs text-blue-600 font-medium mb-1.5">AI 摘要</p>
-                  <p className="text-sm text-gray-700 leading-relaxed">{summary}</p>
+                  <p className="text-sm text-gray-700 leading-relaxed">{detailSummary}</p>
                 </div>
               )}
 

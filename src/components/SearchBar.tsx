@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useSearchStore } from '../store/searchStore';
 import { search } from '../lib/anysearch';
+import { summarizeOverview } from '../lib/glm';
 
 export function SearchBar() {
   const {
@@ -12,6 +13,8 @@ export function SearchBar() {
     addToHistory,
     searchHistory,
     clearHistory,
+    setOverviewSummary,
+    setOverviewLoading,
   } = useSearchStore();
 
   const [isFocused, setIsFocused] = useState(false);
@@ -23,10 +26,18 @@ export function SearchBar() {
     setLoading(true);
     setQuery(q);
     addToHistory(q);
+    setOverviewSummary('');
 
     try {
       const response = await search(q, 10);
       setResults(response.results, response.total);
+
+      // 搜索完成后触发 GLM 总体概括
+      setOverviewLoading(true);
+      summarizeOverview(q, response.results)
+        .then((summary) => setOverviewSummary(summary))
+        .catch(() => setOverviewSummary('AI 总体概括生成失败，请稍后重试'))
+        .finally(() => setOverviewLoading(false));
     } catch (err) {
       setError(err instanceof Error ? err.message : '搜索失败');
     } finally {
@@ -49,7 +60,7 @@ export function SearchBar() {
     <div className="w-full max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
       <div className="text-center mb-8">
         <h1 className="text-3xl font-semibold text-gray-800 mb-2">
-          锐机智能检索
+          锐机智能检索v3
         </h1>
         <p className="text-gray-500 text-sm">智能检索，发现世界</p>
       </div>
