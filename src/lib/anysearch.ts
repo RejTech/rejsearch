@@ -1,4 +1,4 @@
-const API_KEY = 'as_sk_66a3631c2e8124cebdd66dd45f9aec13';
+const API_KEY = 'as_sk_a798ec6e7ebbebf9a95eec6c5e4c2566';
 const API_URL = 'https://api.anysearch.com/v1/search';
 
 export interface SearchResult {
