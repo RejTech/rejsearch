@@ -109,7 +109,7 @@ export default function Home() {
                   <p className="text-sm text-gray-400">GLM-4-Flash 正在解析许可证...</p>
                 </div>
               ) : (
-                <div className="space-y-4">
+                <div className="space-y-4 animate-fade-in-up">
                   <div className="flex items-center gap-2 mb-4">
                     <span className="px-2 py-0.5 bg-blue-100 text-blue-600 text-xs rounded-full">AI 解析</span>
                     <span className="text-xs text-gray-400">基于 GLM-4-Flash 生成</span>

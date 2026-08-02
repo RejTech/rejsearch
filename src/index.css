@@ -43,3 +43,19 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(6, 182, 212, 0.8);
 }
+
+/* AI 文本进入动画：淡入 + 上移 */
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fade-in-up 0.4s ease-out;
+}

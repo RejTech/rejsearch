@@ -74,8 +74,8 @@ const ERROR_MESSAGES: Record<string, string> = {
   rate_limited: '请求过于频繁，请稍后重试',
 };
 
-/** 文档 POST /v1/search */
-export async function search(options: SearchOptions): Promise<SearchResponse> {
+/** 文档 POST /v1/search（内部实现，不含回退） */
+async function _search(options: SearchOptions): Promise<SearchResponse> {
   const {
     query,
     maxResults = 10,
@@ -170,4 +170,28 @@ export async function search(options: SearchOptions): Promise<SearchResponse> {
       searchTimeMs: metadata.search_time_ms ?? 0,
     },
   };
+}
+
+/**
+ * 文档 POST /v1/search
+ * 带 tag 回退：若 tag/params 导致 400（无效 tag 或缺少必填参数），自动回退到通用搜索。
+ */
+export async function search(options: SearchOptions): Promise<SearchResponse> {
+  try {
+    return await _search(options);
+  } catch (err) {
+    // tag 相关错误（无效 tag / 缺少必填参数）→ 回退到通用搜索
+    if (
+      err instanceof AnySearchError &&
+      err.status === 400 &&
+      (options.tag || options.params)
+    ) {
+      return await _search({
+        ...options,
+        tag: undefined,
+        params: undefined,
+      });
+    }
+    throw err;
+  }
 }

@@ -138,7 +138,7 @@ export function SearchResults() {
         )}
 
         {detailSummary && (
-          <div className="mb-4 p-3 bg-blue-50 border border-blue-100 rounded-lg">
+          <div className="mb-4 p-3 bg-blue-50 border border-blue-100 rounded-lg animate-fade-in-up">
             <p className="text-xs text-blue-600 font-medium mb-1.5">AI 摘要</p>
             <p className="text-sm text-gray-700 leading-relaxed">{detailSummary}</p>
           </div>
@@ -189,7 +189,7 @@ export function SearchResults() {
             {isOverviewLoading && !overviewSummary ? (
               <p className="text-sm text-gray-400">GLM-4-Flash 正在分析所有搜索结果...</p>
             ) : (
-              <p className="text-sm text-gray-600 leading-relaxed" dangerouslySetInnerHTML={{ __html: parseOverviewSummary(overviewSummary, results) }} />
+              <p className="text-sm text-gray-600 leading-relaxed animate-fade-in-up" dangerouslySetInnerHTML={{ __html: parseOverviewSummary(overviewSummary, results) }} />
             )}
           </div>
         )}
@@ -288,7 +288,7 @@ export function SearchResults() {
               )}
 
               {detailSummary && (
-                <div className="mb-4 p-3 bg-blue-50 border border-blue-100 rounded-lg">
+                <div className="mb-4 p-3 bg-blue-50 border border-blue-100 rounded-lg animate-fade-in-up">
                   <p className="text-xs text-blue-600 font-medium mb-1.5">AI 摘要</p>
                   <p className="text-sm text-gray-700 leading-relaxed">{detailSummary}</p>
                 </div>

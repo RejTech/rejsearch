@@ -122,25 +122,33 @@ export async function generateSearchDirection(naturalLanguage: string): Promise<
 
   const prompt = `你是 AnySearch 搜索方向识别助手。根据用户的自然语言描述，判断最适合的搜索方向。
 
-AnySearch API 的 tag 格式为 {domain}.{sub_domain}，常见方向如下：
+AnySearch API 的 tag 格式为 {domain}.{sub_domain}，以下是全部可用 tag（仅可从中选择，不可编造）：
 - code.doc：代码文档搜索，必填参数 library（如 golang/python/react/vue/java）
-- code.repo：代码仓库搜索，参数如 language、topic
-- finance.stock：股票行情搜索，参数如 ticker（如 AAPL/600519）、market
-- finance.macro：宏观经济数据
-- law.case：法律案例搜索
-- law.regulation：法律法规搜索
+- code.issue：GitHub Issue 搜索
+- code.pr：GitHub PR 搜索
+- finance.us_stock：美股行情，参数如 ticker（如 AAPL/TSLA）
+- finance.crypto：加密货币行情
 - academic.paper：学术论文搜索，参数如 field、keyword
-- academic.patent：专利搜索
-- medical.drug：药品信息搜索
-- cybersecurity.threat：网络安全威胁情报，参数如 ioc、type
-- business.registration：工商注册信息，参数如 company、region
-- news.general：新闻资讯搜索
+- academic.author：学术作者信息
+- academic.preprint：预印本论文
+- academic.search：综合学术搜索
+- health.drug：药品信息搜索
+- health.disease：疾病信息搜索
+- legal.statute：法律法规搜索
+- legal.case：法律案例搜索
+- travel.flight：航班信息搜索
+- travel.hotel：酒店信息搜索
+- gaming.achievement：游戏成就搜索
+- film.movie：电影信息搜索
+- film.tv_show：电视剧信息搜索
+- security.cve：CVE 漏洞搜索，参数如 cve（如 CVE-2024-1234）
 
 规则：
-1. 仅当用户描述明确指向某个垂直领域时，才返回对应 tag 和必填参数
+1. 仅当用户描述明确指向上述某个垂直领域时，才返回对应 tag 和必填参数
 2. 不确定或属于通用信息查询时，tag 返回空字符串（通用搜索）
 3. params 中的值根据用户描述填充，无法确定的填空字符串
-4. 严格只输出 JSON，不要有任何额外文字
+4. 严禁编造不在上述列表中的 tag
+5. 严格只输出 JSON，不要有任何额外文字
 
 用户描述：${naturalLanguage}
 
