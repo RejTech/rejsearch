@@ -33,8 +33,10 @@ interface SearchStore {
   selectResult: (result: SearchResult | null) => void;
   
   setOverviewSummary: (summary: string) => void;
+  appendOverviewSummary: (chunk: string) => void;
   setOverviewLoading: (loading: boolean) => void;
   setDetailSummary: (summary: string) => void;
+  appendDetailSummary: (chunk: string) => void;
   setDetailLoading: (loading: boolean) => void;
 
   setSearchDirection: (direction: SearchDirection | null) => void;
@@ -105,8 +107,10 @@ export const useSearchStore = create<SearchStore>((set, get) => ({
   selectResult: (result) => set({ selectedResult: result }),
 
   setOverviewSummary: (overviewSummary) => set({ overviewSummary }),
+  appendOverviewSummary: (chunk) => set((state) => ({ overviewSummary: state.overviewSummary + chunk })),
   setOverviewLoading: (isOverviewLoading) => set({ isOverviewLoading }),
   setDetailSummary: (detailSummary) => set({ detailSummary }),
+  appendDetailSummary: (chunk) => set((state) => ({ detailSummary: state.detailSummary + chunk })),
   setDetailLoading: (isDetailLoading) => set({ isDetailLoading }),
 
   setSearchDirection: (searchDirection) => set({ searchDirection }),

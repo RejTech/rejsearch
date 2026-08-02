@@ -30,8 +30,69 @@ async function callGLM(systemPrompt: string, userPrompt: string, maxTokens: numb
   return (data.choices?.[0]?.message?.content || '').trim();
 }
 
-// 总体概括：对多条搜索结果进行综合概述
-export async function summarizeOverview(query: string, results: SearchResult[]): Promise<string> {
+/**
+ * 流式调用 GLM（SSE），逐 token 返回内容，模拟生成式 AI 实时输出
+ */
+async function* callGLMStream(
+  systemPrompt: string,
+  userPrompt: string,
+  maxTokens: number = 600,
+): AsyncGenerator<string> {
+  const response = await fetch(GLM_API_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${GLM_API_KEY}`,
+    },
+    body: JSON.stringify({
+      model: 'glm-4-flash',
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt },
+      ],
+      temperature: 0.3,
+      max_tokens: maxTokens,
+      stream: true,
+    }),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`GLM API 调用失败: ${response.status} ${errorText}`);
+  }
+
+  const reader = response.body!.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split('\n');
+    buffer = lines.pop() || '';
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed || !trimmed.startsWith('data:')) continue;
+      const data = trimmed.slice(5).trim();
+      if (data === '[DONE]') return;
+      try {
+        const json = JSON.parse(data);
+        const content = json.choices?.[0]?.delta?.content;
+        if (content) yield content;
+      } catch {
+        // 忽略不完整的 JSON 行
+      }
+    }
+  }
+}
+
+// 总体概括：对多条搜索结果进行综合概述（流式）
+export async function summarizeOverview(
+  query: string,
+  results: SearchResult[],
+  onChunk?: (chunk: string) => void,
+): Promise<string> {
   if (!results.length) return '';
 
   const snippets = results
@@ -53,15 +114,23 @@ ${snippets}
 
 请输出概括：`;
 
-  return callGLM(
+  let full = '';
+  for await (const chunk of callGLMStream(
     '你是一个专业的搜索结果分析助手，擅长从多条搜索结果中提取关键信息并进行综合概括。',
     prompt,
     1200,
-  );
+  )) {
+    full += chunk;
+    onChunk?.(chunk);
+  }
+  return full;
 }
 
-// 许可证概括：对LICENSE文件进行摘要，提取允许做和不允许做的内容
-export async function summarizeLicense(content: string): Promise<string> {
+// 许可证概括：对LICENSE文件进行摘要，提取允许做和不允许做的内容（流式）
+export async function summarizeLicense(
+  content: string,
+  onChunk?: (chunk: string) => void,
+): Promise<string> {
   if (!content) return '';
 
   const prompt = `请对以下软件许可证进行分析，输出结构化的摘要。
@@ -83,11 +152,16 @@ ${content.slice(0, 10000)}
 
 请确保内容准确，使用简洁的中文表述。`;
 
-  return callGLM(
+  let full = '';
+  for await (const chunk of callGLMStream(
     '你是一个专业的软件许可证分析助手，擅长解读开源许可证的条款并进行清晰的总结。',
     prompt,
     800,
-  );
+  )) {
+    full += chunk;
+    onChunk?.(chunk);
+  }
+  return full;
 }
 
 // 高级搜索方向：根据自然语言描述生成 AnySearch 的 tag 与 params
@@ -173,8 +247,12 @@ AnySearch API 的 tag 格式为 {domain}.{sub_domain}，以下是全部可用 ta
   };
 }
 
-// 单条详情概括：对单条网页内容进行概括
-export async function summarizeContent(title: string, content: string): Promise<string> {
+// 单条详情概括：对单条网页内容进行概括（流式）
+export async function summarizeContent(
+  title: string,
+  content: string,
+  onChunk?: (chunk: string) => void,
+): Promise<string> {
   if (!content) return '';
 
   const prompt = `请对以下网页内容进行概括总结，用中文输出，简洁清晰，控制在200字以内。
@@ -186,9 +264,14 @@ ${content.slice(0, 8000)}
 
 请输出概括：`;
 
-  return callGLM(
+  let full = '';
+  for await (const chunk of callGLMStream(
     '你是一个专业的网页内容概括助手，擅长从长文本中提取关键信息并用简洁的中文进行概括。',
     prompt,
     600,
-  );
+  )) {
+    full += chunk;
+    onChunk?.(chunk);
+  }
+  return full;
 }

@@ -1,17 +1,54 @@
-import { useState } from 'react';
+import { useState, useMemo, type ReactNode } from 'react';
 import { useSearchStore } from '../store/searchStore';
 import { summarizeContent } from '../lib/glm';
 import { SearchResult } from '../lib/anysearch';
 
-function parseOverviewSummary(text: string, results: SearchResult[]): string {
-  return text.replace(/\[(\d+)\]/g, (match, numStr) => {
-    const index = parseInt(numStr, 10) - 1;
-    if (index >= 0 && index < results.length) {
-      const result = results[index];
-      return `<a href="${result.url}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-blue-100 text-blue-600 text-xs font-medium hover:bg-blue-200 hover:text-blue-700 transition-colors ml-0.5">${numStr}</a>`;
+/**
+ * 逐字浮入渲染：每个字符独立 animate-fade-in-up，key 为绝对位置保证不重复动画。
+ * 同时检测 [N] 引用标记，渲染为可点击的圆形徽章。
+ */
+function renderAnimatedOverview(text: string, results: SearchResult[]) {
+  const regex = /\[(\d+)\]/g;
+  const elements: ReactNode[] = [];
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+
+  while ((match = regex.exec(text)) !== null) {
+    for (let i = lastIndex; i < match.index; i++) {
+      elements.push(<span key={`c${i}`} className="animate-fade-in-up">{text[i]}</span>);
     }
-    return match;
-  });
+    const num = match[1];
+    const idx = parseInt(num, 10) - 1;
+    if (idx >= 0 && idx < results.length) {
+      elements.push(
+        <a
+          key={`b${match.index}`}
+          href={results[idx].url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-blue-100 text-blue-600 text-xs font-medium hover:bg-blue-200 hover:text-blue-700 transition-colors ml-0.5 animate-fade-in-up"
+        >
+          {num}
+        </a>
+      );
+    } else {
+      for (let i = match.index; i < match.index + match[0].length; i++) {
+        elements.push(<span key={`c${i}`} className="animate-fade-in-up">{text[i]}</span>);
+      }
+    }
+    lastIndex = match.index + match[0].length;
+  }
+  for (let i = lastIndex; i < text.length; i++) {
+    elements.push(<span key={`c${i}`} className="animate-fade-in-up">{text[i]}</span>);
+  }
+  return elements;
+}
+
+/** 逐字浮入渲染（纯文本） */
+function renderAnimatedText(text: string) {
+  return text.split('').map((char, i) => (
+    <span key={i} className="animate-fade-in-up">{char}</span>
+  ));
 }
 
 export function SearchResults() {
@@ -27,10 +64,21 @@ export function SearchResults() {
     detailSummary,
     isDetailLoading,
     setDetailSummary,
+    appendDetailSummary,
     setDetailLoading,
   } = useSearchStore();
 
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
+
+  // 逐字浮入动画：基于 GLM 流式输出的实际文本，每个字符独立动画
+  const overviewElements = useMemo(
+    () => renderAnimatedOverview(overviewSummary, results),
+    [overviewSummary, results],
+  );
+  const detailElements = useMemo(
+    () => renderAnimatedText(detailSummary),
+    [detailSummary],
+  );
 
   const handleResultClick = async (result: typeof results[0], index: number) => {
     setActiveIndex(index);
@@ -40,8 +88,7 @@ export function SearchResults() {
     if (result.content) {
       setDetailLoading(true);
       try {
-        const s = await summarizeContent(result.title, result.content);
-        setDetailSummary(s);
+        await summarizeContent(result.title, result.content, (chunk) => appendDetailSummary(chunk));
       } catch {
         setDetailSummary('AI 摘要生成失败，请稍后重试');
       } finally {
@@ -140,7 +187,10 @@ export function SearchResults() {
         {detailSummary && (
           <div className="mb-4 p-3 bg-blue-50 border border-blue-100 rounded-lg animate-fade-in-up">
             <p className="text-xs text-blue-600 font-medium mb-1.5">AI 摘要</p>
-            <p className="text-sm text-gray-700 leading-relaxed">{detailSummary}</p>
+            <p className="text-sm text-gray-700 leading-relaxed">
+              {detailElements}
+              {isDetailLoading && <span className="animate-blink text-gray-400">▋</span>}
+            </p>
           </div>
         )}
 
@@ -189,7 +239,10 @@ export function SearchResults() {
             {isOverviewLoading && !overviewSummary ? (
               <p className="text-sm text-gray-400">GLM-4-Flash 正在分析所有搜索结果...</p>
             ) : (
-              <p className="text-sm text-gray-600 leading-relaxed animate-fade-in-up" dangerouslySetInnerHTML={{ __html: parseOverviewSummary(overviewSummary, results) }} />
+              <p className="text-sm text-gray-600 leading-relaxed">
+                {overviewElements}
+                {isOverviewLoading && <span className="animate-blink text-gray-400">▋</span>}
+              </p>
             )}
           </div>
         )}
@@ -290,7 +343,10 @@ export function SearchResults() {
               {detailSummary && (
                 <div className="mb-4 p-3 bg-blue-50 border border-blue-100 rounded-lg animate-fade-in-up">
                   <p className="text-xs text-blue-600 font-medium mb-1.5">AI 摘要</p>
-                  <p className="text-sm text-gray-700 leading-relaxed">{detailSummary}</p>
+                  <p className="text-sm text-gray-700 leading-relaxed">
+                    {detailElements}
+                    {isDetailLoading && <span className="animate-blink text-gray-400">▋</span>}
+                  </p>
                 </div>
               )}
 

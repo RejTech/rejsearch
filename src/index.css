@@ -59,3 +59,13 @@ body {
 .animate-fade-in-up {
   animation: fade-in-up 0.4s ease-out;
 }
+
+/* 打字机光标闪烁 */
+@keyframes blink {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0; }
+}
+
+.animate-blink {
+  animation: blink 0.8s step-end infinite;
+}

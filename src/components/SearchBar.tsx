@@ -14,6 +14,7 @@ export function SearchBar() {
     searchHistory,
     clearHistory,
     setOverviewSummary,
+    appendOverviewSummary,
     setOverviewLoading,
     searchDirection,
     setSearchDirection,
@@ -85,10 +86,9 @@ export function SearchBar() {
       });
       setResults(response.results, response.total);
 
-      // 搜索完成后触发 GLM 总体概括
+      // 搜索完成后触发 GLM 总体概括（流式输出）
       setOverviewLoading(true);
-      summarizeOverview(q, response.results)
-        .then((summary) => setOverviewSummary(summary))
+      summarizeOverview(q, response.results, (chunk) => appendOverviewSummary(chunk))
         .catch(() => setOverviewSummary('AI 总体概括生成失败，请稍后重试'))
         .finally(() => setOverviewLoading(false));
     } catch (err) {
@@ -120,7 +120,7 @@ export function SearchBar() {
     <div className="w-full max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
       <div className="text-center mb-8">
         <h1 className="text-3xl font-semibold text-gray-800 mb-2">
-          锐机智能检索v3
+          锐机超级搜索v4
         </h1>
         <p className="text-gray-500 text-sm">智能检索，发现世界</p>
       </div>

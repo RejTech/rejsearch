@@ -1,8 +1,38 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, type ReactNode } from 'react';
 import { SearchBar } from '../components/SearchBar';
 import { SearchResults } from '../components/SearchResults';
 import { summarizeLicense } from '../lib/glm';
 import pkg from '../../package.json';
+
+/**
+ * 逐字浮入渲染许可证摘要，【允许做】绿色、【不允许做】红色。
+ * key 为绝对位置，流式追加时已有字符不重复动画。
+ */
+function renderAnimatedLicense(text: string) {
+  const regex = /【允许做】|【不允许做】/g;
+  const elements: ReactNode[] = [];
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+
+  while ((match = regex.exec(text)) !== null) {
+    for (let i = lastIndex; i < match.index; i++) {
+      elements.push(<span key={`c${i}`} className="animate-fade-in-up">{text[i]}</span>);
+    }
+    const isAllow = match[0] === '【允许做】';
+    const colorClass = isAllow
+      ? 'text-green-600 font-medium text-base'
+      : 'text-red-600 font-medium text-base';
+    for (let i = 0; i < match[0].length; i++) {
+      const pos = match.index + i;
+      elements.push(<span key={`c${pos}`} className={`animate-fade-in-up ${colorClass}`}>{match[0][i]}</span>);
+    }
+    lastIndex = match.index + match[0].length;
+  }
+  for (let i = lastIndex; i < text.length; i++) {
+    elements.push(<span key={`c${i}`} className="animate-fade-in-up">{text[i]}</span>);
+  }
+  return elements;
+}
 
 export default function Home() {
   const [showLicenseModal, setShowLicenseModal] = useState(false);
@@ -10,6 +40,11 @@ export default function Home() {
   const [isLicenseLoading, setIsLicenseLoading] = useState(false);
   const [licenseContent, setLicenseContent] = useState('');
   const [showOriginalLicense, setShowOriginalLicense] = useState(false);
+
+  const licenseElements = useMemo(
+    () => renderAnimatedLicense(licenseSummary),
+    [licenseSummary],
+  );
 
   useEffect(() => {
     fetch('/LICENSE')
@@ -20,29 +55,23 @@ export default function Home() {
 
   const handleLicenseClick = async () => {
     if (!licenseContent) return;
-    
+
     setShowLicenseModal(true);
-    setLicenseSummary('');
     setShowOriginalLicense(false);
 
     if (!licenseSummary) {
+      setLicenseSummary('');
       setIsLicenseLoading(true);
       try {
-        const summary = await summarizeLicense(licenseContent);
-        setLicenseSummary(summary);
+        await summarizeLicense(licenseContent, (chunk) => {
+          setLicenseSummary((prev) => prev + chunk);
+        });
       } catch {
         setLicenseSummary('AI 许可证解析失败，请稍后重试');
       } finally {
         setIsLicenseLoading(false);
       }
     }
-  };
-
-  const formatLicenseSummary = (text: string): string => {
-    return text
-      .replace(/【允许做】/g, '<strong class="text-green-600 text-base">【允许做】</strong>')
-      .replace(/【不允许做】/g, '<strong class="text-red-600 text-base">【不允许做】</strong>')
-      .replace(/^- /gm, '<span class="inline-block w-2 h-2 rounded-full bg-blue-500 mr-2 align-middle"></span>');
   };
 
   return (
@@ -103,23 +132,18 @@ export default function Home() {
                 <pre className="text-xs text-gray-600 whitespace-pre-wrap leading-relaxed">
                   {licenseContent}
                 </pre>
-              ) : isLicenseLoading ? (
-                <div className="flex flex-col items-center justify-center py-12">
-                  <div className="w-6 h-6 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin mb-3" />
-                  <p className="text-sm text-gray-400">GLM-4-Flash 正在解析许可证...</p>
-                </div>
-              ) : (
-                <div className="space-y-4 animate-fade-in-up">
+              ) : isLicenseLoading || licenseSummary ? (
+                <div className="space-y-4">
                   <div className="flex items-center gap-2 mb-4">
                     <span className="px-2 py-0.5 bg-blue-100 text-blue-600 text-xs rounded-full">AI 解析</span>
                     <span className="text-xs text-gray-400">基于 GLM-4-Flash 生成</span>
                   </div>
-                  <div
-                    className="text-sm text-gray-600 leading-relaxed"
-                    dangerouslySetInnerHTML={{ __html: formatLicenseSummary(licenseSummary) }}
-                  />
+                  <div className="text-sm text-gray-600 leading-relaxed">
+                    {licenseElements}
+                    {isLicenseLoading && <span className="animate-blink text-gray-400">▋</span>}
+                  </div>
                 </div>
-              )}
+              ) : null}
             </div>
 
             <div className="p-4 border-t border-gray-100 shrink-0">
