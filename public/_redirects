@@ -1,3 +1,6 @@
 # Netlify 边缘代理：将同源 /api/anysearch 请求转发到 AnySearch API（绕过浏览器 CORS）
 # 状态码 200 = 代理（非跳转），浏览器视为同源
 /api/anysearch/*  https://api.anysearch.com/:splat  200
+
+# SPA 路由回退：所有非文件请求交给 React Router 处理（/embed 等）
+/*  /index.html  200

@@ -1,9 +1,21 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useSearchStore } from '../store/searchStore';
 import { search } from '../lib/anysearch';
 import { summarizeOverview, generateSearchDirection } from '../lib/glm';
 
-export function SearchBar() {
+interface SearchBarProps {
+  showTitle?: boolean;
+  redirectOnSearch?: boolean;
+  showAdvancedSearch?: boolean;
+  showGLM?: boolean;
+}
+
+export function SearchBar({
+  showTitle = true,
+  redirectOnSearch = false,
+  showAdvancedSearch = true,
+  showGLM = true,
+}: SearchBarProps = {}) {
   const {
     query,
     setQuery,
@@ -71,6 +83,12 @@ export function SearchBar() {
     const q = searchQuery || query.trim();
     if (!q) return;
 
+    // 内嵌模式且不允许内嵌搜索 → 跳转到主页搜索
+    if (redirectOnSearch) {
+      window.location.href = `${window.location.origin}/?q=${encodeURIComponent(q)}`;
+      return;
+    }
+
     setLoading(true);
     setQuery(q);
     addToHistory(q);
@@ -87,16 +105,32 @@ export function SearchBar() {
       setResults(response.results, response.total);
 
       // 搜索完成后触发 GLM 总体概括（流式输出）
-      setOverviewLoading(true);
-      summarizeOverview(q, response.results, (chunk) => appendOverviewSummary(chunk))
-        .catch(() => setOverviewSummary('AI 总体概括生成失败，请稍后重试'))
-        .finally(() => setOverviewLoading(false));
+      if (showGLM) {
+        setOverviewLoading(true);
+        summarizeOverview(q, response.results, (chunk) => appendOverviewSummary(chunk))
+          .catch(() => setOverviewSummary('AI 总体概括生成失败，请稍后重试'))
+          .finally(() => setOverviewLoading(false));
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : '搜索失败');
     } finally {
       setLoading(false);
     }
   };
+
+  // 主页模式下读取 ?q= 参数自动搜索（从内嵌页面跳转而来）
+  useEffect(() => {
+    if (redirectOnSearch) return;
+    const params = new URLSearchParams(window.location.search);
+    const q = params.get('q');
+    if (q) {
+      setQuery(q);
+      handleSearch(q);
+      // 清除 URL 中的 q 参数，避免刷新时重复搜索
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
@@ -118,12 +152,14 @@ export function SearchBar() {
 
   return (
     <div className="w-full max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div className="text-center mb-8">
-        <h1 className="text-3xl font-semibold text-gray-800 mb-2">
-          锐机超级搜索v4
-        </h1>
-        <p className="text-gray-500 text-sm">智能检索，发现世界</p>
-      </div>
+      {showTitle && (
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-semibold text-gray-800 mb-2">
+            锐机超级搜索v4
+          </h1>
+          <p className="text-gray-500 text-sm">智能检索，发现世界</p>
+        </div>
+      )}
 
       <div className="flex items-center border border-gray-200 rounded-lg p-1.5 transition-all duration-300">
         <input
@@ -162,6 +198,7 @@ export function SearchBar() {
       </div>
 
       {/* 高级搜索方向（Tags & Params） */}
+      {showAdvancedSearch && (
       <div className="mt-3">
         <button
           onClick={() => setShowAdvanced(!showAdvanced)}
@@ -257,6 +294,7 @@ export function SearchBar() {
           </div>
         )}
       </div>
+      )}
 
       <div className="mt-6">
         {searchHistory.length > 0 && (

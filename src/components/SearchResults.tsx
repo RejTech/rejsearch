@@ -21,15 +21,14 @@ function renderAnimatedOverview(text: string, results: SearchResult[]) {
     const idx = parseInt(num, 10) - 1;
     if (idx >= 0 && idx < results.length) {
       elements.push(
-        <a
+        <button
+          type="button"
           key={`b${match.index}`}
-          href={results[idx].url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-blue-100 text-blue-600 text-xs font-medium hover:bg-blue-200 hover:text-blue-700 transition-colors ml-0.5 animate-fade-in-up"
+          data-badge-index={idx}
+          className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-blue-100 text-blue-600 text-xs font-medium hover:bg-blue-200 hover:text-blue-700 transition-colors ml-0.5 animate-fade-in-up cursor-pointer align-middle border-0 p-0"
         >
           {num}
-        </a>
+        </button>
       );
     } else {
       for (let i = match.index; i < match.index + match[0].length; i++) {
@@ -51,7 +50,11 @@ function renderAnimatedText(text: string) {
   ));
 }
 
-export function SearchResults() {
+interface SearchResultsProps {
+  showGLM?: boolean;
+}
+
+export function SearchResults({ showGLM = true }: SearchResultsProps = {}) {
   const {
     results,
     total,
@@ -85,7 +88,7 @@ export function SearchResults() {
     selectResult(result);
     setDetailSummary('');
 
-    if (result.content) {
+    if (showGLM && result.content) {
       setDetailLoading(true);
       try {
         await summarizeContent(result.title, result.content, (chunk) => appendDetailSummary(chunk));
@@ -175,7 +178,7 @@ export function SearchResults() {
           {selectedResult.url}
         </p>
 
-        {isDetailLoading && (
+        {showGLM && isDetailLoading && (
           <div className="mb-4 p-3 bg-gray-50 rounded-lg">
             <div className="flex items-center gap-2">
               <div className="w-4 h-4 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin" />
@@ -184,7 +187,7 @@ export function SearchResults() {
           </div>
         )}
 
-        {detailSummary && (
+        {showGLM && detailSummary && (
           <div className="mb-4 p-3 bg-blue-50 border border-blue-100 rounded-lg animate-fade-in-up">
             <p className="text-xs text-blue-600 font-medium mb-1.5">AI 摘要</p>
             <p className="text-sm text-gray-700 leading-relaxed">
@@ -228,7 +231,7 @@ export function SearchResults() {
         </div>
 
         {/* AI 总体概括 */}
-        {(isOverviewLoading || overviewSummary) && (
+        {showGLM && (isOverviewLoading || overviewSummary) && (
           <div className="mb-6 p-4 bg-gray-50 border border-gray-200 rounded-lg">
             <div className="flex items-center gap-2 mb-2">
               <span className="text-sm font-medium text-gray-700">AI 总体概括</span>
@@ -239,7 +242,18 @@ export function SearchResults() {
             {isOverviewLoading && !overviewSummary ? (
               <p className="text-sm text-gray-400">GLM-4-Flash 正在分析所有搜索结果...</p>
             ) : (
-              <p className="text-sm text-gray-600 leading-relaxed">
+              <p
+                className="text-sm text-gray-600 leading-relaxed"
+                onClick={(e) => {
+                  const target = (e.target as HTMLElement).closest('[data-badge-index]');
+                  if (target) {
+                    const idx = parseInt(target.getAttribute('data-badge-index')!, 10);
+                    if (idx >= 0 && idx < results.length) {
+                      handleResultClick(results[idx], idx);
+                    }
+                  }
+                }}
+              >
                 {overviewElements}
                 {isOverviewLoading && <span className="animate-blink text-gray-400">▋</span>}
               </p>
@@ -331,7 +345,7 @@ export function SearchResults() {
                 {selectedResult.url}
               </p>
 
-              {isDetailLoading && (
+              {showGLM && isDetailLoading && (
                 <div className="mb-4 p-3 bg-gray-50 rounded-lg">
                   <div className="flex items-center gap-2">
                     <div className="w-4 h-4 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin" />
@@ -340,7 +354,7 @@ export function SearchResults() {
                 </div>
               )}
 
-              {detailSummary && (
+              {showGLM && detailSummary && (
                 <div className="mb-4 p-3 bg-blue-50 border border-blue-100 rounded-lg animate-fade-in-up">
                   <p className="text-xs text-blue-600 font-medium mb-1.5">AI 摘要</p>
                   <p className="text-sm text-gray-700 leading-relaxed">
