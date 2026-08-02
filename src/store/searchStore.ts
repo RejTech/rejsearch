@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { SearchResult } from '../lib/anysearch';
+import { SearchDirection } from '../lib/glm';
 
 interface SearchStore {
   query: string;
@@ -17,6 +18,10 @@ interface SearchStore {
   // 单条详情概括
   detailSummary: string;
   isDetailLoading: boolean;
+
+  // 高级搜索方向（Tags & Params）
+  searchDirection: SearchDirection | null;
+  isDirectionLoading: boolean;
   
   setQuery: (query: string) => void;
   setResults: (results: SearchResult[], total: number) => void;
@@ -31,6 +36,9 @@ interface SearchStore {
   setOverviewLoading: (loading: boolean) => void;
   setDetailSummary: (summary: string) => void;
   setDetailLoading: (loading: boolean) => void;
+
+  setSearchDirection: (direction: SearchDirection | null) => void;
+  setDirectionLoading: (loading: boolean) => void;
 }
 
 const STORAGE_KEY = 'anysearch_history';
@@ -64,6 +72,8 @@ export const useSearchStore = create<SearchStore>((set, get) => ({
   isOverviewLoading: false,
   detailSummary: '',
   isDetailLoading: false,
+  searchDirection: null,
+  isDirectionLoading: false,
 
   setQuery: (query) => set({ query }),
 
@@ -98,4 +108,7 @@ export const useSearchStore = create<SearchStore>((set, get) => ({
   setOverviewLoading: (isOverviewLoading) => set({ isOverviewLoading }),
   setDetailSummary: (detailSummary) => set({ detailSummary }),
   setDetailLoading: (isDetailLoading) => set({ isDetailLoading }),
+
+  setSearchDirection: (searchDirection) => set({ searchDirection }),
+  setDirectionLoading: (isDirectionLoading) => set({ isDirectionLoading }),
 }));

@@ -1,16 +1,11 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tsconfigPaths from "vite-tsconfig-paths";
-import { resolve } from 'path';
 
+// https://vite.dev/config/
 export default defineConfig({
   build: {
     sourcemap: 'hidden',
-  },
-  resolve: {
-    exclude: [
-      resolve(__dirname, 'LICENSE'),
-    ],
   },
   plugins: [
     react({
@@ -22,4 +17,14 @@ export default defineConfig({
     }),
     tsconfigPaths()
   ],
+  server: {
+    // AnySearch API 不支持浏览器 CORS，通过 Vite 代理转发为同源请求
+    proxy: {
+      '/api/anysearch': {
+        target: 'https://api.anysearch.com',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/anysearch/, ''),
+      },
+    },
+  },
 })
