@@ -8,6 +8,8 @@ interface SearchBarProps {
   redirectOnSearch?: boolean;
   showAdvancedSearch?: boolean;
   showGLM?: boolean;
+  /** 自动读取并搜索的 URL 参数名，默认 "q"（主页用），可改为 "s"（/ask 页用） */
+  autoSearchParam?: string;
 }
 
 export function SearchBar({
@@ -15,6 +17,7 @@ export function SearchBar({
   redirectOnSearch = false,
   showAdvancedSearch = true,
   showGLM = true,
+  autoSearchParam = 'q',
 }: SearchBarProps = {}) {
   const {
     query,
@@ -118,15 +121,15 @@ export function SearchBar({
     }
   };
 
-  // 主页模式下读取 ?q= 参数自动搜索（从内嵌页面跳转而来）
+  // 根据 autoSearchParam 读取对应 URL 参数自动搜索（默认 ?q=，/ask 页用 ?s=）
   useEffect(() => {
     if (redirectOnSearch) return;
     const params = new URLSearchParams(window.location.search);
-    const q = params.get('q');
+    const q = params.get(autoSearchParam);
     if (q) {
       setQuery(q);
       handleSearch(q);
-      // 清除 URL 中的 q 参数，避免刷新时重复搜索
+      // 清除 URL 中的参数，避免刷新时重复搜索
       window.history.replaceState({}, '', window.location.pathname);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
