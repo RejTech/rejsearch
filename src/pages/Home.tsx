@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { SearchBar } from '../components/SearchBar';
 import { SearchResults } from '../components/SearchResults';
 import { LicenseButton } from '../components/LicenseButton';
+import { ThemeToggle } from '../components/ThemeToggle';
 import { type EmbedConfig, DEFAULT_EMBED_CONFIG, buildEmbedUrl } from '../lib/embedConfig';
 import pkg from '../../package.json';
 
@@ -44,17 +45,18 @@ export default function Home() {
         </div>
       </div>
 
-      <footer className="border-t border-gray-100 bg-white py-4 px-4">
+      <footer className="border-t border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 py-4 px-4 transition-colors">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
           <div className="flex items-center gap-3">
-            <span className="text-gray-500 text-sm">版本 {pkg.version}</span>
-            <span className="hidden sm:inline text-gray-300">|</span>
+            <span className="text-gray-500 dark:text-gray-400 text-sm">版本 {pkg.version}</span>
+            <span className="hidden sm:inline text-gray-300 dark:text-gray-700">|</span>
           </div>
 
           <div className="flex items-center gap-3">
+            <ThemeToggle />
             <button
               onClick={() => setShowCustomizeModal(true)}
-              className="px-3 py-1.5 bg-blue-50 border border-blue-200 rounded text-blue-600 text-sm hover:bg-blue-100 transition-colors"
+              className="px-3 py-1.5 bg-blue-50 dark:bg-blue-900/40 border border-blue-200 dark:border-blue-800 rounded text-blue-600 dark:text-blue-300 text-sm hover:bg-blue-100 dark:hover:bg-blue-900/60 transition-colors"
             >
               定制内嵌部件
             </button>
@@ -71,12 +73,12 @@ export default function Home() {
             onClick={() => setShowCustomizeModal(false)}
           />
 
-          <div className="relative bg-white rounded-xl w-full max-w-lg max-h-[85vh] flex flex-col shadow-lg">
-            <div className="flex items-center justify-between p-4 border-b border-gray-100 shrink-0">
-              <h3 className="text-base font-medium text-gray-800">定制内嵌部件</h3>
+          <div className="relative bg-white dark:bg-gray-800 rounded-xl w-full max-w-lg max-h-[85vh] flex flex-col shadow-lg transition-colors">
+            <div className="flex items-center justify-between p-4 border-b border-gray-100 dark:border-gray-700 shrink-0">
+              <h3 className="text-base font-medium text-gray-800 dark:text-gray-100">定制内嵌部件</h3>
               <button
                 onClick={() => setShowCustomizeModal(false)}
-                className="text-gray-400 text-sm hover:text-gray-600 transition-colors"
+                className="text-gray-400 dark:text-gray-500 text-sm hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
               >
                 关闭
               </button>
@@ -86,17 +88,17 @@ export default function Home() {
               {TOGGLE_OPTIONS.map((opt) => (
                 <label
                   key={opt.key}
-                  className="flex items-center justify-between p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors"
+                  className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                 >
                   <div className="flex-1 min-w-0">
-                    <div className="text-sm text-gray-800 font-medium">{opt.label}</div>
-                    <div className="text-xs text-gray-400 mt-0.5">{opt.desc}</div>
+                    <div className="text-sm text-gray-800 dark:text-gray-100 font-medium">{opt.label}</div>
+                    <div className="text-xs text-gray-400 dark:text-gray-400 mt-0.5">{opt.desc}</div>
                   </div>
                   <button
                     type="button"
                     onClick={() => toggleOption(opt.key)}
                     className={`relative w-11 h-6 rounded-full transition-colors shrink-0 ml-3 ${
-                      embedConfig[opt.key] ? 'bg-blue-500' : 'bg-gray-300'
+                      embedConfig[opt.key] ? 'bg-blue-500' : 'bg-gray-300 dark:bg-gray-600'
                     }`}
                   >
                     <span
@@ -109,19 +111,19 @@ export default function Home() {
               ))}
             </div>
 
-            <div className="p-4 border-t border-gray-100 shrink-0 space-y-3">
+            <div className="p-4 border-t border-gray-100 dark:border-gray-700 shrink-0 space-y-3">
               <div>
-                <label className="text-xs text-gray-400 mb-1 block">内嵌链接</label>
+                <label className="text-xs text-gray-400 dark:text-gray-500 mb-1 block">内嵌链接</label>
                 <div className="flex gap-2">
                   <input
                     type="text"
                     readOnly
                     value={embedUrl}
-                    className="flex-1 bg-gray-50 border border-gray-200 rounded-md px-3 py-2 text-xs text-gray-600 font-mono outline-none min-w-0"
+                    className="flex-1 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-md px-3 py-2 text-xs text-gray-600 dark:text-gray-300 font-mono outline-none min-w-0"
                   />
                   <button
                     onClick={copyUrl}
-                    className="px-4 py-2 bg-gray-800 text-white text-sm rounded-md hover:bg-gray-700 transition-colors shrink-0"
+                    className="px-4 py-2 bg-gray-800 dark:bg-gray-200 text-white dark:text-gray-800 text-sm rounded-md hover:bg-gray-700 dark:hover:bg-white transition-colors shrink-0"
                   >
                     {copied ? '已复制' : '复制链接'}
                   </button>
@@ -131,7 +133,7 @@ export default function Home() {
                 href={embedUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="block w-full text-center py-2 bg-blue-50 border border-blue-200 text-blue-600 text-sm rounded-lg hover:bg-blue-100 transition-colors"
+                className="block w-full text-center py-2 bg-blue-50 dark:bg-blue-900/40 border border-blue-200 dark:border-blue-800 text-blue-600 dark:text-blue-300 text-sm rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/60 transition-colors"
               >
                 在新标签页预览
               </a>

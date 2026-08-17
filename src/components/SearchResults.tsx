@@ -320,6 +320,28 @@ export function SearchResults({ showGLM = true, allowFollowUp = true }: SearchRe
 
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
 
+  // 分页：每页 10 条
+  const PAGE_SIZE = 10;
+  const [currentPage, setCurrentPage] = useState(1);
+  const totalPages = Math.max(1, Math.ceil(results.length / PAGE_SIZE));
+  const safePage = Math.min(currentPage, totalPages);
+  const pageStart = (safePage - 1) * PAGE_SIZE;
+  const pageEnd = pageStart + PAGE_SIZE;
+  const pagedResults = results.slice(pageStart, pageEnd);
+
+  // results 变化时重置到第一页
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [results]);
+
+  // 翻页后滚动到结果列表顶部
+  const resultsTopRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (currentPage > 1 && resultsTopRef.current) {
+      resultsTopRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, [currentPage]);
+
   // 追问窗口状态：mode 为 'detail'（基于单条结果原文）或 'overview'（基于所有搜索结果）
   const [followUpMode, setFollowUpMode] = useState<'detail' | 'overview' | null>(null);
   const [showFollowUp, setShowFollowUp] = useState(false);
@@ -509,15 +531,15 @@ export function SearchResults({ showGLM = true, allowFollowUp = true }: SearchRe
           {[1, 2, 3].map((i) => (
             <div
               key={i}
-              className="bg-gray-50 border border-gray-100 rounded-lg p-6 animate-pulse"
+              className="bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-lg p-6 animate-pulse"
               style={{ animationDelay: `${i * 100}ms` }}
             >
-              <div className="h-5 bg-gray-200 rounded w-3/4 mb-3" />
-              <div className="h-4 bg-gray-100 rounded w-full mb-3" />
-              <div className="h-4 bg-gray-100 rounded w-5/6 mb-4" />
+              <div className="h-5 bg-gray-200 dark:bg-gray-700 rounded w-3/4 mb-3" />
+              <div className="h-4 bg-gray-100 dark:bg-gray-700 rounded w-full mb-3" />
+              <div className="h-4 bg-gray-100 dark:bg-gray-700 rounded w-5/6 mb-4" />
               <div className="flex items-center gap-4">
-                <div className="h-3 bg-gray-100 rounded w-20" />
-                <div className="h-3 bg-gray-100 rounded w-32" />
+                <div className="h-3 bg-gray-100 dark:bg-gray-700 rounded w-20" />
+                <div className="h-3 bg-gray-100 dark:bg-gray-700 rounded w-32" />
               </div>
             </div>
           ))}
@@ -530,8 +552,8 @@ export function SearchResults({ showGLM = true, allowFollowUp = true }: SearchRe
     return (
       <div className="mt-8 px-4 sm:px-6">
         <div className="max-w-4xl mx-auto">
-          <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
-            <p className="text-red-600">{error}</p>
+          <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg p-6 text-center">
+            <p className="text-red-600 dark:text-red-300">{error}</p>
           </div>
         </div>
       </div>
@@ -600,6 +622,11 @@ export function SearchResults({ showGLM = true, allowFollowUp = true }: SearchRe
         <div className="flex items-center justify-between mb-4">
           <p className="text-gray-500 text-sm">
             找到 <span className="text-gray-800 font-semibold">{total}</span> 条结果
+            {totalPages > 1 && (
+              <span className="text-gray-400 ml-2">
+                · 第 {safePage}/{totalPages} 页（{pageStart + 1}-{Math.min(pageEnd, results.length)}）
+              </span>
+            )}
           </p>
         </div>
 
@@ -648,40 +675,86 @@ export function SearchResults({ showGLM = true, allowFollowUp = true }: SearchRe
         )}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 space-y-3">
-            {results.map((result, index) => (
-              <div
-                key={index}
-                onClick={() => handleResultClick(result, index)}
-                className={`bg-white border rounded-lg p-5 cursor-pointer transition-all duration-200 ${
-                  activeIndex === index
-                    ? 'border-gray-400 shadow-md'
-                    : 'border-gray-100 hover:border-gray-300 hover:shadow-sm'
-                }`}
-              >
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex-1 min-w-0">
-                    <h3 className="text-base font-medium text-gray-800 mb-2 hover:text-gray-600 transition-colors line-clamp-2">
-                      {result.title}
-                    </h3>
-                    <p className="text-gray-500 text-sm leading-relaxed mb-3 line-clamp-2">
-                      {result.snippet}
-                    </p>
-                    <div className="flex items-center gap-4 text-xs text-gray-400">
-                      {result.source && <span>{result.source}</span>}
-                      {result.timestamp && <span>{formatDate(result.timestamp)}</span>}
+          <div className="lg:col-span-2 space-y-3" ref={resultsTopRef}>
+            {pagedResults.map((result, idx) => {
+              const index = pageStart + idx;
+              return (
+                <div
+                  key={index}
+                  onClick={() => handleResultClick(result, index)}
+                  className={`bg-white border rounded-2xl p-5 cursor-pointer transition-all duration-200 ${
+                    activeIndex === index
+                      ? 'border-gray-400 shadow-md'
+                      : 'border-gray-100 hover:border-gray-300 hover:shadow-sm'
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-base font-medium text-gray-800 mb-2 hover:text-gray-600 transition-colors line-clamp-2">
+                        {result.title}
+                      </h3>
+                      <p className="text-gray-500 text-sm leading-relaxed mb-3 line-clamp-2">
+                        {result.snippet}
+                      </p>
+                      <div className="flex items-center gap-4 text-xs text-gray-400">
+                        {result.source && <span>{result.source}</span>}
+                        {result.timestamp && <span>{formatDate(result.timestamp)}</span>}
+                      </div>
                     </div>
                   </div>
+                  <div className="mt-3 pt-3 border-t border-gray-50">
+                    <p className="text-xs text-gray-400 font-mono truncate">{result.url}</p>
+                  </div>
                 </div>
-                <div className="mt-3 pt-3 border-t border-gray-50">
-                  <p className="text-xs text-gray-400 font-mono truncate">{result.url}</p>
+              );
+            })}
+
+            {/* 分页控件 */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-center gap-2 pt-4 pb-2">
+                <button
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  disabled={safePage <= 1}
+                  className={`px-3 py-1.5 text-sm rounded-full border transition-colors ${
+                    safePage <= 1
+                      ? 'bg-gray-50 text-gray-300 border-gray-100 cursor-not-allowed'
+                      : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
+                  }`}
+                >
+                  上一页
+                </button>
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+                    <button
+                      key={p}
+                      onClick={() => setCurrentPage(p)}
+                      className={`w-8 h-8 text-sm rounded-full transition-colors ${
+                        p === safePage
+                          ? 'bg-gray-800 text-white'
+                          : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
+                      }`}
+                    >
+                      {p}
+                    </button>
+                  ))}
                 </div>
+                <button
+                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={safePage >= totalPages}
+                  className={`px-3 py-1.5 text-sm rounded-full border transition-colors ${
+                    safePage >= totalPages
+                      ? 'bg-gray-50 text-gray-300 border-gray-100 cursor-not-allowed'
+                      : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
+                  }`}
+                >
+                  下一页
+                </button>
               </div>
-            ))}
+            )}
           </div>
 
           <div className="hidden lg:block lg:col-span-1">
-            <div className="bg-white border border-gray-100 rounded-lg p-4 sticky top-4">
+            <div className="bg-white border border-gray-100 rounded-2xl p-4 sticky top-4">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-base font-medium text-gray-800">内容详情</h3>
                 {selectedResult && (

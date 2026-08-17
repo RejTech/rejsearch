@@ -21,6 +21,10 @@ body {
   overflow-x: hidden;
 }
 
+html.dark body {
+  background: #111827;
+}
+
 #root {
   width: 100%;
   max-width: 100%;
@@ -42,6 +46,18 @@ body {
 
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(6, 182, 212, 0.8);
+}
+
+html.dark ::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+html.dark ::-webkit-scrollbar-thumb {
+  background: rgba(6, 182, 212, 0.4);
+}
+
+html.dark ::-webkit-scrollbar-thumb:hover {
+  background: rgba(6, 182, 212, 0.7);
 }
 
 /* AI 文本进入动画：淡入 + 上移 */

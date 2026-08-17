@@ -73,7 +73,7 @@ export function LicenseButton() {
     <>
       <button
         onClick={handleClick}
-        className="px-3 py-1.5 bg-gray-50 border border-gray-200 rounded text-gray-600 text-sm hover:bg-gray-100 transition-colors"
+        className="px-3 py-1.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded text-gray-600 dark:text-gray-300 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
       >
         本项目许可证（GPLv3）
       </button>
@@ -82,37 +82,37 @@ export function LicenseButton() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={close} />
 
-          <div className="relative bg-white rounded-xl w-full max-w-lg max-h-[85vh] flex flex-col shadow-lg">
-            <div className="flex items-center justify-between p-4 border-b border-gray-100 shrink-0">
-              <h3 className="text-base font-medium text-gray-800">本项目许可证</h3>
-              <button onClick={close} className="text-gray-400 text-sm hover:text-gray-600 transition-colors">
+          <div className="relative bg-white dark:bg-gray-800 rounded-xl w-full max-w-lg max-h-[85vh] flex flex-col shadow-lg transition-colors">
+            <div className="flex items-center justify-between p-4 border-b border-gray-100 dark:border-gray-700 shrink-0">
+              <h3 className="text-base font-medium text-gray-800 dark:text-gray-100">本项目许可证</h3>
+              <button onClick={close} className="text-gray-400 dark:text-gray-500 text-sm hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
                 关闭
               </button>
             </div>
 
             <div className="flex-1 overflow-y-auto p-4">
               {showOriginal ? (
-                <pre className="text-xs text-gray-600 whitespace-pre-wrap leading-relaxed">
+                <pre className="text-xs text-gray-600 dark:text-gray-300 whitespace-pre-wrap leading-relaxed">
                   {content}
                 </pre>
               ) : isLoading || summary ? (
                 <div className="space-y-4">
                   <div className="flex items-center gap-2 mb-4">
-                    <span className="px-2 py-0.5 bg-blue-100 text-blue-600 text-xs rounded-full">AI 解析</span>
-                    <span className="text-xs text-gray-400">基于 GLM-4-Flash 生成</span>
+                    <span className="px-2 py-0.5 bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-300 text-xs rounded-full">AI 解析</span>
+                    <span className="text-xs text-gray-400 dark:text-gray-500">基于 GLM-4-Flash 生成</span>
                   </div>
-                  <div className="text-sm text-gray-600 leading-relaxed">
+                  <div className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
                     {elements}
-                    {isLoading && <span className="animate-blink text-gray-400">▋</span>}
+                    {isLoading && <span className="animate-blink text-gray-400 dark:text-gray-500">▋</span>}
                   </div>
                 </div>
               ) : null}
             </div>
 
-            <div className="p-4 border-t border-gray-100 shrink-0">
+            <div className="p-4 border-t border-gray-100 dark:border-gray-700 shrink-0">
               <button
                 onClick={() => setShowOriginal(!showOriginal)}
-                className="w-full py-2 bg-gray-800 text-white text-sm rounded-lg hover:bg-gray-700 transition-colors"
+                className="w-full py-2 bg-gray-800 dark:bg-gray-200 text-white dark:text-gray-800 text-sm rounded-lg hover:bg-gray-700 dark:hover:bg-white transition-colors"
               >
                 {showOriginal ? '查看 AI 解析' : '查看原文'}
               </button>

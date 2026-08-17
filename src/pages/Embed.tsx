@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { SearchBar } from '../components/SearchBar';
 import { SearchResults } from '../components/SearchResults';
 import { LicenseButton } from '../components/LicenseButton';
+import { ThemeToggle } from '../components/ThemeToggle';
 import { parseEmbedConfig } from '../lib/embedConfig';
 import pkg from '../../package.json';
 
@@ -27,11 +28,14 @@ export default function Embed() {
       </div>
 
       {showFooter && (
-        <footer className="border-t border-gray-100 bg-white py-4 px-4">
+        <footer className="border-t border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 py-4 px-4 transition-colors">
           <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
-            {config.showVersion && (
-              <span className="text-gray-500 text-sm">版本 {pkg.version}</span>
-            )}
+            <div className="flex items-center gap-3">
+              {config.showVersion && (
+                <span className="text-gray-500 dark:text-gray-400 text-sm">版本 {pkg.version}</span>
+              )}
+              <ThemeToggle />
+            </div>
             {config.showLicense && <LicenseButton />}
           </div>
         </footer>

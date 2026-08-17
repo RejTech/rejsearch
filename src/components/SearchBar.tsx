@@ -54,7 +54,7 @@ export function SearchBar({
     try {
       const response = await search({
         query: q,
-        maxResults: 10,
+        maxResults: 20,
       });
       setResults(response.results, response.total);
 
@@ -107,16 +107,18 @@ export function SearchBar({
     <div className="w-full max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
       {showTitle && (
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-semibold text-gray-800 mb-2">
-            锐机超级搜索v4
+          <h1 className="text-3xl font-semibold text-gray-800 dark:text-gray-100 mb-2">
+            锐机超级搜索v5
           </h1>
-          <p className="text-gray-500 text-sm">智能检索，发现世界</p>
+          <p className="text-gray-500 dark:text-gray-400 text-sm">智能检索，发现世界</p>
         </div>
       )}
 
       <div
-        className={`flex items-center border border-gray-200 rounded-lg p-1.5 transition-all duration-300 ${
-          isFocused ? 'border-gray-400 shadow-sm' : ''
+        className={`flex items-center border border-gray-200 dark:border-gray-700 rounded-full p-1.5 transition-all duration-300 ${
+          isFocused
+            ? 'border-blue-400 shadow-lg shadow-blue-100 dark:shadow-blue-900/30 ring-2 ring-blue-100 dark:ring-blue-900/40'
+            : ''
         }`}
       >
         <input
@@ -127,13 +129,13 @@ export function SearchBar({
           onBlur={() => setIsFocused(false)}
           onKeyPress={handleKeyPress}
           placeholder="输入搜索关键词..."
-          className="flex-1 bg-transparent text-gray-800 placeholder-gray-400 text-base py-2.5 px-4 outline-none min-w-0"
+          className="flex-1 bg-transparent text-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 text-base py-2.5 px-4 outline-none min-w-0"
         />
 
         {query && (
           <button
             onClick={() => setQuery('')}
-            className="p-2 text-gray-400 hover:text-gray-600 transition-colors shrink-0"
+            className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors shrink-0"
           >
             清除
           </button>
@@ -142,10 +144,10 @@ export function SearchBar({
         <button
           onClick={() => handleSearch()}
           disabled={!query.trim()}
-          className={`ml-1 px-5 py-2 rounded-md font-medium transition-all duration-300 shrink-0 ${
+          className={`ml-1 px-5 py-2 rounded-full font-medium transition-all duration-300 shrink-0 ${
             query.trim()
-              ? 'bg-gray-800 text-white hover:bg-gray-700'
-              : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+              ? 'bg-gray-800 dark:bg-gray-100 text-white dark:text-gray-900 hover:bg-gray-700 dark:hover:bg-white'
+              : 'bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 cursor-not-allowed'
           }`}
         >
           搜索
@@ -166,10 +168,10 @@ export function SearchBar({
       >
         <div>
           <div className="flex items-center justify-between mb-2">
-            <span className="text-gray-500 text-sm">搜索历史</span>
+            <span className="text-gray-500 dark:text-gray-400 text-sm">搜索历史</span>
             <button
               onClick={clearHistory}
-              className="text-gray-400 text-xs hover:text-gray-600 transition-colors"
+              className="text-gray-400 dark:text-gray-500 text-xs hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
             >
               清空
             </button>
@@ -179,7 +181,7 @@ export function SearchBar({
               <button
                 key={index}
                 onClick={() => handleHistoryClick(term)}
-                className="px-3 py-1.5 bg-gray-50 border border-gray-100 rounded text-gray-600 hover:bg-gray-100 transition-all duration-200 text-sm"
+                className="px-3 py-1.5 bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-full text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-200 text-sm"
               >
                 {term}
               </button>
