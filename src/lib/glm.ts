@@ -3,6 +3,16 @@ import { SearchResult } from './anysearch';
 const GLM_API_KEY = '838b59bb70234f5dbbff4748e6b58714.y6IBHlQe8RHw2gOA';
 const GLM_API_URL = 'https://open.bigmodel.cn/api/paas/v4/chat/completions';
 
+export interface FollowUpMessage {
+  role: 'user' | 'assistant';
+  content: string;
+}
+
+interface ChatMessage {
+  role: 'system' | 'user' | 'assistant';
+  content: string;
+}
+
 async function callGLM(systemPrompt: string, userPrompt: string, maxTokens: number = 600): Promise<string> {
   const response = await fetch(GLM_API_URL, {
     method: 'POST',
@@ -31,13 +41,21 @@ async function callGLM(systemPrompt: string, userPrompt: string, maxTokens: numb
 }
 
 /**
- * 流式调用 GLM（SSE），逐 token 返回内容，模拟生成式 AI 实时输出
+ * 流式调用 GLM（SSE），逐 token 返回内容，模拟生成式 AI 实时输出。
+ * 支持传入完整 messages 数组（用于多轮对话场景）。
  */
 async function* callGLMStream(
   systemPrompt: string,
-  userPrompt: string,
+  userPrompt: string | ChatMessage[],
   maxTokens: number = 600,
 ): AsyncGenerator<string> {
+  const messages: ChatMessage[] = Array.isArray(userPrompt)
+    ? [{ role: 'system', content: systemPrompt }, ...userPrompt]
+    : [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt },
+      ];
+
   const response = await fetch(GLM_API_URL, {
     method: 'POST',
     headers: {
@@ -46,10 +64,7 @@ async function* callGLMStream(
     },
     body: JSON.stringify({
       model: 'glm-4-flash',
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: userPrompt },
-      ],
+      messages,
       temperature: 0.3,
       max_tokens: maxTokens,
       stream: true,
@@ -270,6 +285,83 @@ ${content.slice(0, 8000)}
     prompt,
     600,
   )) {
+    full += chunk;
+    onChunk?.(chunk);
+  }
+  return full;
+}
+
+/**
+ * 追问对话：基于某条搜索结果的完整内容（标题+URL+原文），与 AI 进行多轮流式对话。
+ * historyMessages：历史对话（不含当前系统提示与注入的原文），最后一条应当是最新的 user 提问。
+ * onChunk：流式回调，逐 token 推送 AI 回复。
+ */
+export async function followUpStream(
+  result: { title: string; url: string; content: string },
+  historyMessages: FollowUpMessage[],
+  onChunk?: (chunk: string) => void,
+): Promise<string> {
+  const systemPrompt =
+    '你是锐机超级搜索的 AI 追问助手。用户正在阅读一条搜索结果，会根据页面原文向你追问。' +
+    '请基于「参考原文」进行回答，不要编造事实。若原文不足以回答问题，请明确告知用户。' +
+    '回答使用简洁、清晰的中文，不使用 Markdown。';
+
+  // 把「参考原文」作为多轮对话的第一条 user 消息注入，之后再拼接真实历史
+  const contextPrompt = `参考原文（请以此为回答依据）：
+标题：${result.title}
+URL：${result.url}
+原文内容：
+${(result.content || '').slice(0, 8000)}
+
+---
+后续消息为用户基于此原文的追问，请结合以上原文作答。`;
+
+  const messages: ChatMessage[] = [
+    { role: 'user', content: contextPrompt },
+    ...historyMessages.map<ChatMessage>((m) => ({ role: m.role, content: m.content })),
+  ];
+
+  let full = '';
+  for await (const chunk of callGLMStream(systemPrompt, messages, 1500)) {
+    full += chunk;
+    onChunk?.(chunk);
+  }
+  return full;
+}
+
+/**
+ * 基于所有搜索结果的追问对话：把每条结果的标题+URL+摘要拼成上下文，多轮对话。
+ */
+export async function followUpOverviewStream(
+  results: SearchResult[],
+  historyMessages: FollowUpMessage[],
+  onChunk?: (chunk: string) => void,
+): Promise<string> {
+  if (!results.length) return '';
+
+  const systemPrompt =
+    '你是锐机超级搜索的 AI 追问助手。用户已通过搜索获得多条结果，会基于这些结果的总体概括向你追问。' +
+    '请综合所有「参考结果」进行回答，不要编造事实。若信息不足以回答问题，请明确告知用户。' +
+    '回答使用简洁、清晰的中文，不使用 Markdown。';
+
+  const snippets = results
+    .map((r, i) => `[${i + 1}] ${r.title}\n    URL: ${r.url}\n    摘要: ${r.snippet}`)
+    .join('\n\n');
+
+  const contextPrompt = `参考搜索结果（共 ${results.length} 条，请综合这些信息作答）：
+
+${snippets}
+
+---
+后续消息为用户基于以上搜索结果的追问。若引用某条结果，可在回答中用 [序号] 标注。`;
+
+  const messages: ChatMessage[] = [
+    { role: 'user', content: contextPrompt },
+    ...historyMessages.map<ChatMessage>((m) => ({ role: m.role, content: m.content })),
+  ];
+
+  let full = '';
+  for await (const chunk of callGLMStream(systemPrompt, messages, 1500)) {
     full += chunk;
     onChunk?.(chunk);
   }
