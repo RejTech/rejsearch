@@ -304,7 +304,7 @@ export async function followUpStream(
   const systemPrompt =
     '你是锐机超级搜索的 AI 追问助手。用户正在阅读一条搜索结果，会根据页面原文向你追问。' +
     '请基于「参考原文」进行回答，不要编造事实。若原文不足以回答问题，请明确告知用户。' +
-    '回答使用简洁、清晰的中文，不使用 Markdown。';
+    '回答使用简洁的中文，可使用 Markdown 语法（代码块、行内代码、加粗、列表、表格等）来提升可读性。';
 
   // 把「参考原文」作为多轮对话的第一条 user 消息注入，之后再拼接真实历史
   const contextPrompt = `参考原文（请以此为回答依据）：
@@ -342,7 +342,7 @@ export async function followUpOverviewStream(
   const systemPrompt =
     '你是锐机超级搜索的 AI 追问助手。用户已通过搜索获得多条结果，会基于这些结果的总体概括向你追问。' +
     '请综合所有「参考结果」进行回答，不要编造事实。若信息不足以回答问题，请明确告知用户。' +
-    '回答使用简洁、清晰的中文，不使用 Markdown。';
+    '回答使用简洁的中文，可使用 Markdown 语法（代码块、行内代码、加粗、列表、表格等）来提升可读性。若引用某条结果，可用 [序号] 标注。';
 
   const snippets = results
     .map((r, i) => `[${i + 1}] ${r.title}\n    URL: ${r.url}\n    摘要: ${r.snippet}`)

@@ -20,7 +20,9 @@ export default function Embed() {
             showAdvancedSearch={config.allowInlineSearch}
             showGLM={config.showGLM}
           />
-          {config.allowInlineSearch && <SearchResults showGLM={config.showGLM} />}
+          {config.allowInlineSearch && (
+            <SearchResults showGLM={config.showGLM} allowFollowUp={config.showFollowUp} />
+          )}
         </div>
       </div>
 

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useSearchStore } from '../store/searchStore';
 import { search } from '../lib/anysearch';
 import { summarizeOverview } from '../lib/glm';
@@ -35,7 +35,6 @@ export function SearchBar({
 
   const [isFocused, setIsFocused] = useState(false);
   const [isHistoryHovered, setIsHistoryHovered] = useState(false);
-  const blurTimerRef = useRef<number | null>(null);
 
   const handleSearch = async (searchQuery?: string) => {
     const q = searchQuery || query.trim();
@@ -87,15 +86,6 @@ export function SearchBar({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // 清理 blur 延迟定时器
-  useEffect(() => {
-    return () => {
-      if (blurTimerRef.current !== null) {
-        window.clearTimeout(blurTimerRef.current);
-      }
-    };
-  }, []);
-
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
       handleSearch();
@@ -105,6 +95,9 @@ export function SearchBar({
   const handleHistoryClick = (term: string) => {
     setQuery(term);
     handleSearch(term);
+    // 点击词条后立即收起历史区
+    setIsFocused(false);
+    setIsHistoryHovered(false);
   };
 
   // 搜索历史显示条件：输入框有焦点 或 鼠标停在历史区域
@@ -130,23 +123,8 @@ export function SearchBar({
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          onFocus={() => {
-            if (blurTimerRef.current !== null) {
-              window.clearTimeout(blurTimerRef.current);
-              blurTimerRef.current = null;
-            }
-            setIsFocused(true);
-          }}
-          onBlur={() => {
-            // 延迟失焦，给用户点击历史项的时机（若鼠标停留在历史区，setIsFocused(false) 后仍靠 isHistoryHovered 维持显示）
-            if (blurTimerRef.current !== null) {
-              window.clearTimeout(blurTimerRef.current);
-            }
-            blurTimerRef.current = window.setTimeout(() => {
-              setIsFocused(false);
-              blurTimerRef.current = null;
-            }, 120);
-          }}
+          onFocus={() => setIsFocused(true)}
+          onBlur={() => setIsFocused(false)}
           onKeyPress={handleKeyPress}
           placeholder="输入搜索关键词..."
           className="flex-1 bg-transparent text-gray-800 placeholder-gray-400 text-base py-2.5 px-4 outline-none min-w-0"

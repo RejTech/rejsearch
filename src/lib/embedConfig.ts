@@ -1,7 +1,8 @@
 /** 内嵌部件可配置项 */
 export interface EmbedConfig {
   showTitle: boolean;          // 是否显示标题和副标题
-  showGLM: boolean;            // 是否显示 GLM-4 摘要
+  showGLM: boolean;            // 是否显示 GLM-4 摘要（总体概括 + 详情摘要）
+  showFollowUp: boolean;       // 是否允许向 AI 追问（基于单条原文或全部结果多轮对话）
   showLicense: boolean;        // 是否显示许可证信息
   showVersion: boolean;        // 是否显示版本号
   allowInlineSearch: boolean;  // 是否允许内嵌页面内搜索（false 则跳转主页）
@@ -10,6 +11,7 @@ export interface EmbedConfig {
 export const DEFAULT_EMBED_CONFIG: EmbedConfig = {
   showTitle: true,
   showGLM: true,
+  showFollowUp: true,
   showLicense: true,
   showVersion: true,
   allowInlineSearch: true,
@@ -21,6 +23,7 @@ export function parseEmbedConfig(search: string): EmbedConfig {
   return {
     showTitle: params.get('title') !== 'false',
     showGLM: params.get('glm') !== 'false',
+    showFollowUp: params.get('followup') !== 'false',
     showLicense: params.get('license') !== 'false',
     showVersion: params.get('version') !== 'false',
     allowInlineSearch: params.get('search') !== 'false',
@@ -32,6 +35,7 @@ export function buildEmbedUrl(baseUrl: string, config: EmbedConfig): string {
   const params = new URLSearchParams();
   if (!config.showTitle) params.set('title', 'false');
   if (!config.showGLM) params.set('glm', 'false');
+  if (!config.showFollowUp) params.set('followup', 'false');
   if (!config.showLicense) params.set('license', 'false');
   if (!config.showVersion) params.set('version', 'false');
   if (!config.allowInlineSearch) params.set('search', 'false');

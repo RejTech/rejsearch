@@ -6,11 +6,12 @@ import { type EmbedConfig, DEFAULT_EMBED_CONFIG, buildEmbedUrl } from '../lib/em
 import pkg from '../../package.json';
 
 const TOGGLE_OPTIONS: { key: keyof EmbedConfig; label: string; desc: string }[] = [
-  { key: 'showTitle', label: '标题和副标题', desc: '显示"锐机超级搜索"标题' },
-  { key: 'showGLM', label: 'GLM-4 摘要', desc: '显示 AI 总体概括和详情摘要' },
-  { key: 'showLicense', label: '许可证信息', desc: '显示本项目许可证按钮' },
-  { key: 'showVersion', label: '版本号', desc: '显示底部版本号' },
-  { key: 'allowInlineSearch', label: '内嵌搜索', desc: '允许在内嵌页面内搜索（关闭则跳转主页）' },
+  { key: 'showTitle', label: '标题和副标题', desc: '显示「锐机超级搜索」标题与副标题' },
+  { key: 'allowInlineSearch', label: '内嵌搜索', desc: '允许在内嵌页面内搜索（关闭则点击搜索跳转主页）' },
+  { key: 'showGLM', label: 'GLM-4 摘要', desc: 'AI 总体概括（含引用徽章）与单条结果详情摘要' },
+  { key: 'showFollowUp', label: 'AI 追问', desc: '基于单条原文或所有结果的多轮对话（依赖 GLM-4）' },
+  { key: 'showLicense', label: '许可证信息', desc: '底部显示「本项目许可证」按钮（GLM 解析 GPLv3）' },
+  { key: 'showVersion', label: '版本号', desc: '底部显示当前版本号' },
 ];
 
 export default function Home() {

@@ -1,7 +1,252 @@
-import { useState, useMemo, useRef, useEffect, type ReactNode } from 'react';
+import React, { useState, useMemo, useRef, useEffect, Fragment, type ReactNode } from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { useSearchStore } from '../store/searchStore';
 import { summarizeContent, followUpStream, followUpOverviewStream, type FollowUpMessage } from '../lib/glm';
 import { SearchResult } from '../lib/anysearch';
+
+/** 复制代码块按钮 */
+function CodeBlock({ children }: { children: ReactNode }) {
+  const [copied, setCopied] = useState(false);
+  const handleCopy = async () => {
+    try {
+      const text = typeof children === 'string'
+        ? children
+        : Array.isArray(children)
+          ? children.join('')
+          : '';
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      // 复制失败静默处理
+    }
+  };
+  return (
+    <div className="relative my-2 group">
+      <button
+        type="button"
+        onClick={handleCopy}
+        className="absolute top-2 right-2 px-2 py-1 text-xs bg-gray-700 text-gray-200 rounded opacity-0 group-hover:opacity-100 transition-opacity hover:bg-gray-600"
+      >
+        {copied ? '已复制' : '复制'}
+      </button>
+      <pre className="bg-gray-900 text-gray-100 text-xs rounded-lg p-3 overflow-x-auto font-mono leading-relaxed">
+        <code>{children}</code>
+      </pre>
+    </div>
+  );
+}
+
+/** Markdown 渲染：支持代码块、行内代码、加粗、列表、表格、引用、链接等 */
+function Markdown({ content }: { content: string }) {
+  return (
+    <div className="markdown-body text-sm text-gray-700 leading-relaxed">
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
+        components={{
+          code({ inline, className, children, ...props }: any) {
+            if (inline) {
+              return (
+                <code className="px-1 py-0.5 bg-gray-100 text-pink-600 rounded text-xs font-mono" {...props}>
+                  {children}
+                </code>
+              );
+            }
+            return <CodeBlock>{children}</CodeBlock>;
+          },
+          p({ children }) {
+            return <p className="my-1.5 first:mt-0 last:mb-0">{children}</p>;
+          },
+          ul({ children }) {
+            return <ul className="my-1.5 pl-5 list-disc space-y-1">{children}</ul>;
+          },
+          ol({ children }) {
+            return <ol className="my-1.5 pl-5 list-decimal space-y-1">{children}</ol>;
+          },
+          li({ children }) {
+            return <li>{children}</li>;
+          },
+          h1({ children }) {
+            return <h1 className="text-base font-semibold my-2 text-gray-800">{children}</h1>;
+          },
+          h2({ children }) {
+            return <h2 className="text-base font-semibold my-2 text-gray-800">{children}</h2>;
+          },
+          h3({ children }) {
+            return <h3 className="text-sm font-semibold my-2 text-gray-800">{children}</h3>;
+          },
+          h4({ children }) {
+            return <h4 className="text-sm font-semibold my-1.5 text-gray-800">{children}</h4>;
+          },
+          blockquote({ children }) {
+            return (
+              <blockquote className="my-2 pl-3 border-l-2 border-gray-200 text-gray-500 italic">
+                {children}
+              </blockquote>
+            );
+          },
+          a({ href, children }) {
+            return (
+              <a href={href} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline hover:text-blue-800">
+                {children}
+              </a>
+            );
+          },
+          strong({ children }) {
+            return <strong className="font-semibold text-gray-800">{children}</strong>;
+          },
+          table({ children }) {
+            return (
+              <div className="my-2 overflow-x-auto">
+                <table className="border-collapse text-xs">{children}</table>
+              </div>
+            );
+          },
+          th({ children }) {
+            return <th className="border border-gray-200 px-2 py-1 bg-gray-50 text-gray-700 font-medium text-left">{children}</th>;
+          },
+          td({ children }) {
+            return <td className="border border-gray-200 px-2 py-1">{children}</td>;
+          },
+          hr() {
+            return <hr className="my-3 border-gray-200" />;
+          },
+        }}
+      >
+        {content}
+      </ReactMarkdown>
+    </div>
+  );
+}
+
+/** 把文本节点中的 [N] 引用标记渲染为可点击的圆形徽章 */
+function renderTextWithBadges(text: string, results: SearchResult[]): ReactNode[] {
+  const regex = /\[(\d+)\]/g;
+  const elements: ReactNode[] = [];
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+  while ((match = regex.exec(text)) !== null) {
+    if (match.index > lastIndex) {
+      elements.push(text.slice(lastIndex, match.index));
+    }
+    const num = match[1];
+    const idx = parseInt(num, 10) - 1;
+    if (idx >= 0 && idx < results.length) {
+      elements.push(
+        <button
+          type="button"
+          key={`b${match.index}`}
+          data-badge-index={idx}
+          className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-blue-100 text-blue-600 text-xs font-medium hover:bg-blue-200 hover:text-blue-700 transition-colors mx-0.5 align-middle border-0 p-0 cursor-pointer"
+        >
+          {num}
+        </button>,
+      );
+    } else {
+      elements.push(match[0]);
+    }
+    lastIndex = match.index + match[0].length;
+  }
+  if (lastIndex < text.length) {
+    elements.push(text.slice(lastIndex));
+  }
+  return elements;
+}
+
+/** 递归遍历 React 子节点，把字符串里的 [N] 替换为徽章按钮 */
+function injectBadges(node: ReactNode, results: SearchResult[]): ReactNode {
+  if (typeof node === 'string') {
+    return <>{renderTextWithBadges(node, results)}</>;
+  }
+  if (Array.isArray(node)) {
+    return node.map((child, i) => (
+      <Fragment key={i}>{injectBadges(child, results)}</Fragment>
+    ));
+  }
+  if (node && typeof node === 'object' && 'props' in node) {
+    const el = node as React.ReactElement;
+    const children = el.props.children;
+    return React.cloneElement(el, el.props, injectBadges(children, results));
+  }
+  return node;
+}
+
+/** overview 模式专用：Markdown 渲染 + [N] 引用徽章 */
+function MarkdownWithBadges({ content, results }: { content: string; results: SearchResult[] }) {
+  return (
+    <div className="markdown-body text-sm text-gray-700 leading-relaxed">
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
+        components={{
+          code({ inline, className, children, ...props }: any) {
+            if (inline) {
+              return (
+                <code className="px-1 py-0.5 bg-gray-100 text-pink-600 rounded text-xs font-mono" {...props}>
+                  {children}
+                </code>
+              );
+            }
+            return <CodeBlock>{children}</CodeBlock>;
+          },
+          p({ children }) {
+            return <p className="my-1.5 first:mt-0 last:mb-0">{injectBadges(children, results)}</p>;
+          },
+          li({ children }) {
+            return <li>{injectBadges(children, results)}</li>;
+          },
+          h1({ children }) {
+            return <h1 className="text-base font-semibold my-2 text-gray-800">{injectBadges(children, results)}</h1>;
+          },
+          h2({ children }) {
+            return <h2 className="text-base font-semibold my-2 text-gray-800">{injectBadges(children, results)}</h2>;
+          },
+          h3({ children }) {
+            return <h3 className="text-sm font-semibold my-2 text-gray-800">{injectBadges(children, results)}</h3>;
+          },
+          h4({ children }) {
+            return <h4 className="text-sm font-semibold my-1.5 text-gray-800">{injectBadges(children, results)}</h4>;
+          },
+          blockquote({ children }) {
+            return (
+              <blockquote className="my-2 pl-3 border-l-2 border-gray-200 text-gray-500 italic">
+                {children}
+              </blockquote>
+            );
+          },
+          a({ href, children }) {
+            return (
+              <a href={href} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline hover:text-blue-800">
+                {children}
+              </a>
+            );
+          },
+          strong({ children }) {
+            return <strong className="font-semibold text-gray-800">{children}</strong>;
+          },
+          table({ children }) {
+            return (
+              <div className="my-2 overflow-x-auto">
+                <table className="border-collapse text-xs">{children}</table>
+              </div>
+            );
+          },
+          th({ children }) {
+            return <th className="border border-gray-200 px-2 py-1 bg-gray-50 text-gray-700 font-medium text-left">{children}</th>;
+          },
+          td({ children }) {
+            return <td className="border border-gray-200 px-2 py-1">{children}</td>;
+          },
+          hr() {
+            return <hr className="my-3 border-gray-200" />;
+          },
+        }}
+      >
+        {content}
+      </ReactMarkdown>
+    </div>
+  );
+}
 
 /**
  * 逐字浮入渲染：每个字符独立 animate-fade-in-up，key 为绝对位置保证不重复动画。
@@ -52,9 +297,11 @@ function renderAnimatedText(text: string) {
 
 interface SearchResultsProps {
   showGLM?: boolean;
+  /** 是否允许向 AI 追问（默认 true）；关闭时隐藏所有追问入口 */
+  allowFollowUp?: boolean;
 }
 
-export function SearchResults({ showGLM = true }: SearchResultsProps = {}) {
+export function SearchResults({ showGLM = true, allowFollowUp = true }: SearchResultsProps = {}) {
   const {
     results,
     total,
@@ -234,18 +481,15 @@ export function SearchResults({ showGLM = true }: SearchResultsProps = {}) {
     if (!selectedResult) return null;
     return (
       <div className="mt-4 flex flex-col gap-2">
-        <button
-          type="button"
-          onClick={() => openFollowUp('detail')}
-          disabled={!showGLM}
-          className={`w-full py-2 text-sm rounded-lg transition-colors ${
-            showGLM
-              ? 'bg-blue-50 text-blue-600 border border-blue-200 hover:bg-blue-100'
-              : 'bg-gray-50 text-gray-400 border border-gray-200 cursor-not-allowed'
-          }`}
-        >
-          {showGLM ? '向 AI 追问 ↗' : '未启用 AI 功能'}
-        </button>
+        {showGLM && allowFollowUp && (
+          <button
+            type="button"
+            onClick={() => openFollowUp('detail')}
+            className="w-full py-2 text-sm rounded-lg transition-colors bg-blue-50 text-blue-600 border border-blue-200 hover:bg-blue-100"
+          >
+            向 AI 追问 ↗
+          </button>
+        )}
         <a
           href={selectedResult.url}
           target="_blank"
@@ -387,7 +631,7 @@ export function SearchResults({ showGLM = true }: SearchResultsProps = {}) {
                   {overviewElements}
                   {isOverviewLoading && <span className="animate-blink text-gray-400">▋</span>}
                 </p>
-                {!isOverviewLoading && (
+                {!isOverviewLoading && showGLM && allowFollowUp && (
                   <div className="mt-3 pt-3 border-t border-gray-200">
                     <button
                       type="button"
@@ -576,32 +820,34 @@ export function SearchResults({ showGLM = true }: SearchResultsProps = {}) {
                     </div>
                   );
                 }
-                // assistant：overview 模式渲染 [N] 徽章，detail 模式纯逐字浮入
-                return (
-                  <div key={idx} className="flex justify-start">
+                // assistant：渲染 Markdown；overview 模式支持 [N] 徽章点击跳转结果
+                const rendered = msg.content ? (
+                  followUpMode === 'overview' ? (
                     <div
-                      className="max-w-[85%] px-4 py-2.5 bg-white border border-gray-100 text-sm text-gray-700 rounded-2xl rounded-tl-sm shadow-sm leading-relaxed whitespace-pre-wrap break-all"
                       onClick={(e) => {
-                        if (followUpMode !== 'overview') return;
                         const target = (e.target as HTMLElement).closest('[data-badge-index]');
                         if (target) {
                           const nIdx = parseInt(target.getAttribute('data-badge-index')!, 10);
                           if (nIdx >= 0 && nIdx < results.length) {
                             handleResultClick(results[nIdx], nIdx);
+                            closeFollowUp();
                           }
                         }
                       }}
                     >
-                      {msg.content ? (
-                        <>
-                          {followUpMode === 'overview'
-                            ? renderAnimatedOverview(msg.content, results)
-                            : renderAnimatedText(msg.content)}
-                          {showCursor && <span className="animate-blink text-gray-400 ml-0.5">▋</span>}
-                        </>
-                      ) : (
-                        <span className="text-gray-400">正在思考...</span>
-                      )}
+                      <MarkdownWithBadges content={msg.content} results={results} />
+                    </div>
+                  ) : (
+                    <Markdown content={msg.content} />
+                  )
+                ) : (
+                  <span className="text-gray-400">正在思考...</span>
+                );
+                return (
+                  <div key={idx} className="flex justify-start">
+                    <div className="max-w-[90%] px-4 py-2.5 bg-white border border-gray-100 text-sm text-gray-700 rounded-2xl rounded-tl-sm shadow-sm leading-relaxed">
+                      {rendered}
+                      {showCursor && <span className="animate-blink text-gray-400 ml-0.5">▋</span>}
                     </div>
                   </div>
                 );
