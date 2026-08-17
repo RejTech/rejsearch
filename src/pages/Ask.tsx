@@ -6,7 +6,7 @@ import pkg from '../../package.json';
 
 export default function Ask() {
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col bg-white dark:bg-gray-900 transition-colors">
       <div className="flex-1 py-16 px-4">
         <div className="max-w-6xl mx-auto">
           <SearchBar

@@ -37,7 +37,7 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col bg-white dark:bg-gray-900 transition-colors">
       <div className="flex-1 py-12 px-4">
         <div className="max-w-6xl mx-auto">
           <SearchBar />
@@ -73,7 +73,7 @@ export default function Home() {
             onClick={() => setShowCustomizeModal(false)}
           />
 
-          <div className="relative bg-white dark:bg-gray-800 rounded-xl w-full max-w-lg max-h-[85vh] flex flex-col shadow-lg transition-colors">
+          <div className="relative bg-white dark:bg-gray-800 rounded-2xl w-full max-w-lg max-h-[85vh] flex flex-col shadow-lg transition-colors">
             <div className="flex items-center justify-between p-4 border-b border-gray-100 dark:border-gray-700 shrink-0">
               <h3 className="text-base font-medium text-gray-800 dark:text-gray-100">定制内嵌部件</h3>
               <button
@@ -88,7 +88,7 @@ export default function Home() {
               {TOGGLE_OPTIONS.map((opt) => (
                 <label
                   key={opt.key}
-                  className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                  className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-2xl cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                 >
                   <div className="flex-1 min-w-0">
                     <div className="text-sm text-gray-800 dark:text-gray-100 font-medium">{opt.label}</div>
@@ -119,11 +119,11 @@ export default function Home() {
                     type="text"
                     readOnly
                     value={embedUrl}
-                    className="flex-1 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-md px-3 py-2 text-xs text-gray-600 dark:text-gray-300 font-mono outline-none min-w-0"
+                    className="flex-1 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl px-3 py-2 text-xs text-gray-600 dark:text-gray-300 font-mono outline-none min-w-0"
                   />
                   <button
                     onClick={copyUrl}
-                    className="px-4 py-2 bg-gray-800 dark:bg-gray-200 text-white dark:text-gray-800 text-sm rounded-md hover:bg-gray-700 dark:hover:bg-white transition-colors shrink-0"
+                    className="px-4 py-2 bg-gray-800 dark:bg-gray-200 text-white dark:text-gray-800 text-sm rounded-full hover:bg-gray-700 dark:hover:bg-white transition-colors shrink-0"
                   >
                     {copied ? '已复制' : '复制链接'}
                   </button>
@@ -133,7 +133,7 @@ export default function Home() {
                 href={embedUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="block w-full text-center py-2 bg-blue-50 dark:bg-blue-900/40 border border-blue-200 dark:border-blue-800 text-blue-600 dark:text-blue-300 text-sm rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/60 transition-colors"
+                className="block w-full text-center py-2 bg-blue-50 dark:bg-blue-900/40 border border-blue-200 dark:border-blue-800 text-blue-600 dark:text-blue-300 text-sm rounded-full hover:bg-blue-100 dark:hover:bg-blue-900/60 transition-colors"
               >
                 在新标签页预览
               </a>

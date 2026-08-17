@@ -82,7 +82,7 @@ export function LicenseButton() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={close} />
 
-          <div className="relative bg-white dark:bg-gray-800 rounded-xl w-full max-w-lg max-h-[85vh] flex flex-col shadow-lg transition-colors">
+          <div className="relative bg-white dark:bg-gray-800 rounded-2xl w-full max-w-lg max-h-[85vh] flex flex-col shadow-lg transition-colors">
             <div className="flex items-center justify-between p-4 border-b border-gray-100 dark:border-gray-700 shrink-0">
               <h3 className="text-base font-medium text-gray-800 dark:text-gray-100">本项目许可证</h3>
               <button onClick={close} className="text-gray-400 dark:text-gray-500 text-sm hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
@@ -112,7 +112,7 @@ export function LicenseButton() {
             <div className="p-4 border-t border-gray-100 dark:border-gray-700 shrink-0">
               <button
                 onClick={() => setShowOriginal(!showOriginal)}
-                className="w-full py-2 bg-gray-800 dark:bg-gray-200 text-white dark:text-gray-800 text-sm rounded-lg hover:bg-gray-700 dark:hover:bg-white transition-colors"
+                className="w-full py-2 bg-gray-800 dark:bg-gray-200 text-white dark:text-gray-800 text-sm rounded-full hover:bg-gray-700 dark:hover:bg-white transition-colors"
               >
                 {showOriginal ? '查看 AI 解析' : '查看原文'}
               </button>

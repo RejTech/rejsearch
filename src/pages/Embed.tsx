@@ -12,7 +12,7 @@ export default function Embed() {
   const showFooter = config.showVersion || config.showLicense;
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col bg-white dark:bg-gray-900 transition-colors">
       <div className="flex-1 py-8 px-4">
         <div className="max-w-6xl mx-auto">
           <SearchBar

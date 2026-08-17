@@ -31,7 +31,7 @@ function CodeBlock({ children }: { children: ReactNode }) {
       >
         {copied ? '已复制' : '复制'}
       </button>
-      <pre className="bg-gray-900 text-gray-100 text-xs rounded-lg p-3 overflow-x-auto font-mono leading-relaxed">
+      <pre className="bg-gray-900 text-gray-100 text-xs rounded-2xl p-3 overflow-x-auto font-mono leading-relaxed">
         <code>{children}</code>
       </pre>
     </div>
@@ -41,14 +41,14 @@ function CodeBlock({ children }: { children: ReactNode }) {
 /** Markdown 渲染：支持代码块、行内代码、加粗、列表、表格、引用、链接等 */
 function Markdown({ content }: { content: string }) {
   return (
-    <div className="markdown-body text-sm text-gray-700 leading-relaxed">
+    <div className="markdown-body text-sm text-gray-700 dark:text-gray-200 leading-relaxed">
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         components={{
           code({ inline, className, children, ...props }: any) {
             if (inline) {
               return (
-                <code className="px-1 py-0.5 bg-gray-100 text-pink-600 rounded text-xs font-mono" {...props}>
+                <code className="px-1 py-0.5 bg-gray-100 dark:bg-gray-800 text-pink-600 dark:text-pink-400 rounded text-xs font-mono" {...props}>
                   {children}
                 </code>
               );
@@ -68,33 +68,33 @@ function Markdown({ content }: { content: string }) {
             return <li>{children}</li>;
           },
           h1({ children }) {
-            return <h1 className="text-base font-semibold my-2 text-gray-800">{children}</h1>;
+            return <h1 className="text-base font-semibold my-2 text-gray-800 dark:text-gray-100">{children}</h1>;
           },
           h2({ children }) {
-            return <h2 className="text-base font-semibold my-2 text-gray-800">{children}</h2>;
+            return <h2 className="text-base font-semibold my-2 text-gray-800 dark:text-gray-100">{children}</h2>;
           },
           h3({ children }) {
-            return <h3 className="text-sm font-semibold my-2 text-gray-800">{children}</h3>;
+            return <h3 className="text-sm font-semibold my-2 text-gray-800 dark:text-gray-100">{children}</h3>;
           },
           h4({ children }) {
-            return <h4 className="text-sm font-semibold my-1.5 text-gray-800">{children}</h4>;
+            return <h4 className="text-sm font-semibold my-1.5 text-gray-800 dark:text-gray-100">{children}</h4>;
           },
           blockquote({ children }) {
             return (
-              <blockquote className="my-2 pl-3 border-l-2 border-gray-200 text-gray-500 italic">
+              <blockquote className="my-2 pl-3 border-l-2 border-gray-200 dark:border-gray-600 text-gray-500 dark:text-gray-400 italic">
                 {children}
               </blockquote>
             );
           },
           a({ href, children }) {
             return (
-              <a href={href} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline hover:text-blue-800">
+              <a href={href} target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 underline hover:text-blue-800 dark:hover:text-blue-300">
                 {children}
               </a>
             );
           },
           strong({ children }) {
-            return <strong className="font-semibold text-gray-800">{children}</strong>;
+            return <strong className="font-semibold text-gray-800 dark:text-gray-100">{children}</strong>;
           },
           table({ children }) {
             return (
@@ -104,13 +104,13 @@ function Markdown({ content }: { content: string }) {
             );
           },
           th({ children }) {
-            return <th className="border border-gray-200 px-2 py-1 bg-gray-50 text-gray-700 font-medium text-left">{children}</th>;
+            return <th className="border border-gray-200 dark:border-gray-600 px-2 py-1 bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-200 font-medium text-left">{children}</th>;
           },
           td({ children }) {
-            return <td className="border border-gray-200 px-2 py-1">{children}</td>;
+            return <td className="border border-gray-200 dark:border-gray-600 px-2 py-1">{children}</td>;
           },
           hr() {
-            return <hr className="my-3 border-gray-200" />;
+            return <hr className="my-3 border-gray-200 dark:border-gray-600" />;
           },
         }}
       >
@@ -120,9 +120,9 @@ function Markdown({ content }: { content: string }) {
   );
 }
 
-/** 把文本节点中的 [N] 引用标记渲染为可点击的圆形徽章 */
+/** 把文本节点中的 [N] 或 [N,M,K] 引用标记渲染为可点击的圆形徽章 */
 function renderTextWithBadges(text: string, results: SearchResult[]): ReactNode[] {
-  const regex = /\[(\d+)\]/g;
+  const regex = /\[(\d+(?:\s*,\s*\d+)*)\]/g;
   const elements: ReactNode[] = [];
   let lastIndex = 0;
   let match: RegExpExecArray | null;
@@ -130,22 +130,24 @@ function renderTextWithBadges(text: string, results: SearchResult[]): ReactNode[
     if (match.index > lastIndex) {
       elements.push(text.slice(lastIndex, match.index));
     }
-    const num = match[1];
-    const idx = parseInt(num, 10) - 1;
-    if (idx >= 0 && idx < results.length) {
-      elements.push(
-        <button
-          type="button"
-          key={`b${match.index}`}
-          data-badge-index={idx}
-          className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-blue-100 text-blue-600 text-xs font-medium hover:bg-blue-200 hover:text-blue-700 transition-colors mx-0.5 align-middle border-0 p-0 cursor-pointer"
-        >
-          {num}
-        </button>,
-      );
-    } else {
-      elements.push(match[0]);
-    }
+    const nums = match[1].split(',').map((s) => s.trim()).filter(Boolean);
+    nums.forEach((num) => {
+      const idx = parseInt(num, 10) - 1;
+      if (idx >= 0 && idx < results.length) {
+        elements.push(
+          <button
+            type="button"
+            key={`b${match.index}-${num}`}
+            data-badge-index={idx}
+            className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300 text-xs font-medium hover:bg-blue-200 dark:hover:bg-blue-800 hover:text-blue-700 dark:hover:text-blue-200 transition-colors mx-0.5 align-middle border-0 p-0 cursor-pointer"
+          >
+            {num}
+          </button>,
+        );
+      } else {
+        elements.push(num);
+      }
+    });
     lastIndex = match.index + match[0].length;
   }
   if (lastIndex < text.length) {
@@ -253,7 +255,7 @@ function MarkdownWithBadges({ content, results }: { content: string; results: Se
  * 同时检测 [N] 引用标记，渲染为可点击的圆形徽章。
  */
 function renderAnimatedOverview(text: string, results: SearchResult[]) {
-  const regex = /\[(\d+)\]/g;
+  const regex = /\[(\d+(?:\s*,\s*\d+)*)\]/g;
   const elements: ReactNode[] = [];
   let lastIndex = 0;
   let match: RegExpExecArray | null;
@@ -262,23 +264,31 @@ function renderAnimatedOverview(text: string, results: SearchResult[]) {
     for (let i = lastIndex; i < match.index; i++) {
       elements.push(<span key={`c${i}`} className="animate-fade-in-up">{text[i]}</span>);
     }
-    const num = match[1];
-    const idx = parseInt(num, 10) - 1;
-    if (idx >= 0 && idx < results.length) {
-      elements.push(
-        <button
-          type="button"
-          key={`b${match.index}`}
-          data-badge-index={idx}
-          className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-blue-100 text-blue-600 text-xs font-medium hover:bg-blue-200 hover:text-blue-700 transition-colors ml-0.5 animate-fade-in-up cursor-pointer align-middle border-0 p-0"
-        >
-          {num}
-        </button>
-      );
-    } else {
+    const nums = match[1].split(',').map((s) => s.trim()).filter(Boolean);
+    if (nums.length === 0) {
       for (let i = match.index; i < match.index + match[0].length; i++) {
         elements.push(<span key={`c${i}`} className="animate-fade-in-up">{text[i]}</span>);
       }
+    } else {
+      nums.forEach((num) => {
+        const idx = parseInt(num, 10) - 1;
+        if (idx >= 0 && idx < results.length) {
+          elements.push(
+            <button
+              type="button"
+              key={`b${match.index}-${num}`}
+              data-badge-index={idx}
+              className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300 text-xs font-medium hover:bg-blue-200 dark:hover:bg-blue-800 hover:text-blue-700 dark:hover:text-blue-200 transition-colors ml-0.5 animate-fade-in-up cursor-pointer align-middle border-0 p-0"
+            >
+              {num}
+            </button>
+          );
+        } else {
+          num.split('').forEach((ch, i) => {
+            elements.push(<span key={`c${match.index}-${i}`} className="animate-fade-in-up">{ch}</span>);
+          });
+        }
+      });
     }
     lastIndex = match.index + match[0].length;
   }
@@ -507,7 +517,7 @@ export function SearchResults({ showGLM = true, allowFollowUp = true }: SearchRe
           <button
             type="button"
             onClick={() => openFollowUp('detail')}
-            className="w-full py-2 text-sm rounded-lg transition-colors bg-blue-50 text-blue-600 border border-blue-200 hover:bg-blue-100"
+            className="w-full py-2 text-sm rounded-full transition-colors bg-blue-50 dark:bg-blue-900/40 text-blue-600 dark:text-blue-300 border border-blue-200 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-900/60"
           >
             向 AI 追问 ↗
           </button>
@@ -516,7 +526,7 @@ export function SearchResults({ showGLM = true, allowFollowUp = true }: SearchRe
           href={selectedResult.url}
           target="_blank"
           rel="noopener noreferrer"
-          className="w-full text-center py-2 bg-gray-800 text-white text-sm rounded-lg hover:bg-gray-700 transition-colors"
+          className="w-full text-center py-2 bg-gray-800 dark:bg-gray-200 text-white dark:text-gray-900 text-sm rounded-full hover:bg-gray-700 dark:hover:bg-white transition-colors"
         >
           跳转到原页面
         </a>
@@ -531,7 +541,7 @@ export function SearchResults({ showGLM = true, allowFollowUp = true }: SearchRe
           {[1, 2, 3].map((i) => (
             <div
               key={i}
-              className="bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-lg p-6 animate-pulse"
+              className="bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl p-6 animate-pulse"
               style={{ animationDelay: `${i * 100}ms` }}
             >
               <div className="h-5 bg-gray-200 dark:bg-gray-700 rounded w-3/4 mb-3" />
@@ -552,7 +562,7 @@ export function SearchResults({ showGLM = true, allowFollowUp = true }: SearchRe
     return (
       <div className="mt-8 px-4 sm:px-6">
         <div className="max-w-4xl mx-auto">
-          <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg p-6 text-center">
+          <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-2xl p-6 text-center">
             <p className="text-red-600 dark:text-red-300">{error}</p>
           </div>
         </div>
@@ -568,46 +578,46 @@ export function SearchResults({ showGLM = true, allowFollowUp = true }: SearchRe
     if (!selectedResult) {
       return (
         <div className="text-center py-12">
-          <p className="text-gray-400 text-sm">点击搜索结果查看详情</p>
+          <p className="text-gray-400 dark:text-gray-500 text-sm">点击搜索结果查看详情</p>
         </div>
       );
     }
 
     return (
       <>
-        <h4 className="text-sm font-medium text-gray-700 mb-2 line-clamp-2">
+        <h4 className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-2 line-clamp-2">
           {selectedResult.title}
         </h4>
-        <p className="text-xs text-gray-400 mb-4 font-mono truncate">
+        <p className="text-xs text-gray-400 dark:text-gray-500 mb-4 font-mono truncate">
           {selectedResult.url}
         </p>
 
         {showGLM && isDetailLoading && (
-          <div className="mb-4 p-3 bg-gray-50 rounded-lg">
+          <div className="mb-4 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-2xl">
             <div className="flex items-center gap-2">
-              <div className="w-4 h-4 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin" />
-              <span className="text-xs text-gray-500">GLM-4-Flash 正在解析...</span>
+              <div className="w-4 h-4 border-2 border-gray-300 dark:border-gray-600 border-t-gray-600 dark:border-t-gray-300 rounded-full animate-spin" />
+              <span className="text-xs text-gray-500 dark:text-gray-400">GLM-4-Flash 正在解析...</span>
             </div>
           </div>
         )}
 
         {showGLM && detailSummary && (
-          <div className="mb-4 p-3 bg-blue-50 border border-blue-100 rounded-lg animate-fade-in-up">
-            <p className="text-xs text-blue-600 font-medium mb-1.5">AI 摘要</p>
-            <p className="text-sm text-gray-700 leading-relaxed">
+          <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/30 border border-blue-100 dark:border-blue-800 rounded-2xl animate-fade-in-up">
+            <p className="text-xs text-blue-600 dark:text-blue-300 font-medium mb-1.5">AI 摘要</p>
+            <p className="text-sm text-gray-700 dark:text-gray-200 leading-relaxed">
               {detailElements}
-              {isDetailLoading && <span className="animate-blink text-gray-400">▋</span>}
+              {isDetailLoading && <span className="animate-blink text-gray-400 dark:text-gray-500">▋</span>}
             </p>
           </div>
         )}
 
         <div className="max-h-[400px] overflow-y-auto">
           {selectedResult.content ? (
-            <div className="whitespace-pre-wrap text-gray-500 text-xs leading-relaxed break-all">
+            <div className="whitespace-pre-wrap text-gray-500 dark:text-gray-400 text-xs leading-relaxed break-all">
               {selectedResult.content}
             </div>
           ) : (
-            <p className="text-gray-400 text-center py-8 text-sm">暂无内容</p>
+            <p className="text-gray-400 dark:text-gray-500 text-center py-8 text-sm">暂无内容</p>
           )}
         </div>
 
@@ -620,10 +630,10 @@ export function SearchResults({ showGLM = true, allowFollowUp = true }: SearchRe
     <div className="mt-8 px-4 sm:px-6 lg:px-8">
       <div className="max-w-6xl mx-auto">
         <div className="flex items-center justify-between mb-4">
-          <p className="text-gray-500 text-sm">
-            找到 <span className="text-gray-800 font-semibold">{total}</span> 条结果
+          <p className="text-gray-500 dark:text-gray-400 text-sm">
+            找到 <span className="text-gray-800 dark:text-gray-100 font-semibold">{total}</span> 条结果
             {totalPages > 1 && (
-              <span className="text-gray-400 ml-2">
+              <span className="text-gray-400 dark:text-gray-500 ml-2">
                 · 第 {safePage}/{totalPages} 页（{pageStart + 1}-{Math.min(pageEnd, results.length)}）
               </span>
             )}
@@ -632,19 +642,19 @@ export function SearchResults({ showGLM = true, allowFollowUp = true }: SearchRe
 
         {/* AI 总体概括 */}
         {showGLM && (isOverviewLoading || overviewSummary) && (
-          <div className="mb-6 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+          <div className="mb-6 p-4 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl transition-colors">
             <div className="flex items-center gap-2 mb-2">
-              <span className="text-sm font-medium text-gray-700">AI 总体概括</span>
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-200">AI 总体概括</span>
               {isOverviewLoading && (
-                <div className="w-3.5 h-3.5 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin" />
+                <div className="w-3.5 h-3.5 border-2 border-gray-300 dark:border-gray-600 border-t-gray-600 dark:border-t-gray-300 rounded-full animate-spin" />
               )}
             </div>
             {isOverviewLoading && !overviewSummary ? (
-              <p className="text-sm text-gray-400">GLM-4-Flash 正在解析所有搜索结果...</p>
+              <p className="text-sm text-gray-400 dark:text-gray-500">GLM-4-Flash 正在解析所有搜索结果...</p>
             ) : (
               <>
                 <p
-                  className="text-sm text-gray-600 leading-relaxed"
+                  className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed"
                   onClick={(e) => {
                     const target = (e.target as HTMLElement).closest('[data-badge-index]');
                     if (target) {
@@ -656,14 +666,14 @@ export function SearchResults({ showGLM = true, allowFollowUp = true }: SearchRe
                   }}
                 >
                   {overviewElements}
-                  {isOverviewLoading && <span className="animate-blink text-gray-400">▋</span>}
+                  {isOverviewLoading && <span className="animate-blink text-gray-400 dark:text-gray-500">▋</span>}
                 </p>
                 {!isOverviewLoading && showGLM && allowFollowUp && (
-                  <div className="mt-3 pt-3 border-t border-gray-200">
+                  <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
                     <button
                       type="button"
                       onClick={() => openFollowUp('overview')}
-                      className="px-3 py-1.5 bg-blue-50 text-blue-600 border border-blue-200 rounded text-sm hover:bg-blue-100 transition-colors"
+                      className="px-3 py-1.5 bg-blue-50 dark:bg-blue-900/40 text-blue-600 dark:text-blue-300 border border-blue-200 dark:border-blue-800 rounded-full text-sm hover:bg-blue-100 dark:hover:bg-blue-900/60 transition-colors"
                     >
                       基于所有结果向 AI 追问 ↗
                     </button>
@@ -682,28 +692,28 @@ export function SearchResults({ showGLM = true, allowFollowUp = true }: SearchRe
                 <div
                   key={index}
                   onClick={() => handleResultClick(result, index)}
-                  className={`bg-white border rounded-2xl p-5 cursor-pointer transition-all duration-200 ${
+                  className={`bg-white dark:bg-gray-800 border rounded-2xl p-5 cursor-pointer transition-all duration-200 ${
                     activeIndex === index
-                      ? 'border-gray-400 shadow-md'
-                      : 'border-gray-100 hover:border-gray-300 hover:shadow-sm'
+                      ? 'border-gray-400 dark:border-gray-500 shadow-md'
+                      : 'border-gray-100 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 hover:shadow-sm'
                   }`}
                 >
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1 min-w-0">
-                      <h3 className="text-base font-medium text-gray-800 mb-2 hover:text-gray-600 transition-colors line-clamp-2">
+                      <h3 className="text-base font-medium text-gray-800 dark:text-gray-100 mb-2 hover:text-gray-600 dark:hover:text-gray-300 transition-colors line-clamp-2">
                         {result.title}
                       </h3>
-                      <p className="text-gray-500 text-sm leading-relaxed mb-3 line-clamp-2">
+                      <p className="text-gray-500 dark:text-gray-400 text-sm leading-relaxed mb-3 line-clamp-2">
                         {result.snippet}
                       </p>
-                      <div className="flex items-center gap-4 text-xs text-gray-400">
+                      <div className="flex items-center gap-4 text-xs text-gray-400 dark:text-gray-500">
                         {result.source && <span>{result.source}</span>}
                         {result.timestamp && <span>{formatDate(result.timestamp)}</span>}
                       </div>
                     </div>
                   </div>
-                  <div className="mt-3 pt-3 border-t border-gray-50">
-                    <p className="text-xs text-gray-400 font-mono truncate">{result.url}</p>
+                  <div className="mt-3 pt-3 border-t border-gray-50 dark:border-gray-700">
+                    <p className="text-xs text-gray-400 dark:text-gray-500 font-mono truncate">{result.url}</p>
                   </div>
                 </div>
               );
@@ -717,8 +727,8 @@ export function SearchResults({ showGLM = true, allowFollowUp = true }: SearchRe
                   disabled={safePage <= 1}
                   className={`px-3 py-1.5 text-sm rounded-full border transition-colors ${
                     safePage <= 1
-                      ? 'bg-gray-50 text-gray-300 border-gray-100 cursor-not-allowed'
-                      : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
+                      ? 'bg-gray-50 dark:bg-gray-800 text-gray-300 dark:text-gray-600 border-gray-100 dark:border-gray-700 cursor-not-allowed'
+                      : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
                   }`}
                 >
                   上一页
@@ -730,8 +740,8 @@ export function SearchResults({ showGLM = true, allowFollowUp = true }: SearchRe
                       onClick={() => setCurrentPage(p)}
                       className={`w-8 h-8 text-sm rounded-full transition-colors ${
                         p === safePage
-                          ? 'bg-gray-800 text-white'
-                          : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
+                          ? 'bg-gray-800 dark:bg-gray-100 text-white dark:text-gray-900'
+                          : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
                       }`}
                     >
                       {p}
@@ -743,8 +753,8 @@ export function SearchResults({ showGLM = true, allowFollowUp = true }: SearchRe
                   disabled={safePage >= totalPages}
                   className={`px-3 py-1.5 text-sm rounded-full border transition-colors ${
                     safePage >= totalPages
-                      ? 'bg-gray-50 text-gray-300 border-gray-100 cursor-not-allowed'
-                      : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
+                      ? 'bg-gray-50 dark:bg-gray-800 text-gray-300 dark:text-gray-600 border-gray-100 dark:border-gray-700 cursor-not-allowed'
+                      : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
                   }`}
                 >
                   下一页
@@ -754,13 +764,13 @@ export function SearchResults({ showGLM = true, allowFollowUp = true }: SearchRe
           </div>
 
           <div className="hidden lg:block lg:col-span-1">
-            <div className="bg-white border border-gray-100 rounded-2xl p-4 sticky top-4">
+            <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl p-4 sticky top-4 transition-colors">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-base font-medium text-gray-800">内容详情</h3>
+                <h3 className="text-base font-medium text-gray-800 dark:text-gray-100">内容详情</h3>
                 {selectedResult && (
                   <button
                     onClick={closeModal}
-                    className="text-gray-400 text-xs hover:text-gray-600 transition-colors"
+                    className="text-gray-400 dark:text-gray-500 text-xs hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
                   >
                     关闭
                   </button>
@@ -778,54 +788,54 @@ export function SearchResults({ showGLM = true, allowFollowUp = true }: SearchRe
             className="absolute inset-0 bg-black/50 backdrop-blur-sm"
             onClick={closeModal}
           />
-          <div className="absolute bottom-0 left-0 right-0 bg-white rounded-t-2xl max-h-[85vh] flex flex-col animate-slide-up overflow-hidden">
-            <div className="flex items-center justify-between p-4 border-b border-gray-100 shrink-0">
-              <h3 className="text-base font-medium text-gray-800">内容详情</h3>
+          <div className="absolute bottom-0 left-0 right-0 bg-white dark:bg-gray-800 rounded-t-2xl max-h-[85vh] flex flex-col animate-slide-up overflow-hidden transition-colors">
+            <div className="flex items-center justify-between p-4 border-b border-gray-100 dark:border-gray-700 shrink-0">
+              <h3 className="text-base font-medium text-gray-800 dark:text-gray-100">内容详情</h3>
               <button
                 onClick={closeModal}
-                className="text-gray-400 text-sm hover:text-gray-600 transition-colors"
+                className="text-gray-400 dark:text-gray-500 text-sm hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
               >
                 关闭
               </button>
             </div>
 
             <div className="flex-1 overflow-y-auto p-4">
-              <h4 className="text-base font-medium text-gray-800 mb-2 line-clamp-2">
+              <h4 className="text-base font-medium text-gray-800 dark:text-gray-100 mb-2 line-clamp-2">
                 {selectedResult.title}
               </h4>
-              <p className="text-xs text-gray-400 font-mono truncate mb-4">
+              <p className="text-xs text-gray-400 dark:text-gray-500 font-mono truncate mb-4">
                 {selectedResult.url}
               </p>
 
               {showGLM && isDetailLoading && (
-                <div className="mb-4 p-3 bg-gray-50 rounded-lg">
+                <div className="mb-4 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-2xl">
                   <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin" />
-                    <span className="text-xs text-gray-500">GLM-4-Flash 正在解析...</span>
+                    <div className="w-4 h-4 border-2 border-gray-300 dark:border-gray-600 border-t-gray-600 dark:border-t-gray-300 rounded-full animate-spin" />
+                    <span className="text-xs text-gray-500 dark:text-gray-400">GLM-4-Flash 正在解析...</span>
                   </div>
                 </div>
               )}
 
               {showGLM && detailSummary && (
-                <div className="mb-4 p-3 bg-blue-50 border border-blue-100 rounded-lg animate-fade-in-up">
-                  <p className="text-xs text-blue-600 font-medium mb-1.5">AI 摘要</p>
-                  <p className="text-sm text-gray-700 leading-relaxed">
+                <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/30 border border-blue-100 dark:border-blue-800 rounded-2xl animate-fade-in-up">
+                  <p className="text-xs text-blue-600 dark:text-blue-300 font-medium mb-1.5">AI 摘要</p>
+                  <p className="text-sm text-gray-700 dark:text-gray-200 leading-relaxed">
                     {detailElements}
-                    {isDetailLoading && <span className="animate-blink text-gray-400">▋</span>}
+                    {isDetailLoading && <span className="animate-blink text-gray-400 dark:text-gray-500">▋</span>}
                   </p>
                 </div>
               )}
 
               {selectedResult.content ? (
-                <div className="whitespace-pre-wrap text-gray-500 text-xs leading-relaxed break-all">
+                <div className="whitespace-pre-wrap text-gray-500 dark:text-gray-400 text-xs leading-relaxed break-all">
                   {selectedResult.content}
                 </div>
               ) : (
-                <p className="text-gray-400 text-center py-8 text-sm">暂无内容</p>
+                <p className="text-gray-400 dark:text-gray-500 text-center py-8 text-sm">暂无内容</p>
               )}
             </div>
 
-            <div className="p-4 border-t border-gray-100 shrink-0">
+            <div className="p-4 border-t border-gray-100 dark:border-gray-700 shrink-0">
               {renderDetailFooter()}
             </div>
           </div>
@@ -839,20 +849,20 @@ export function SearchResults({ showGLM = true, allowFollowUp = true }: SearchRe
             className="absolute inset-0 bg-black/50 backdrop-blur-sm"
             onClick={closeFollowUp}
           />
-          <div className="relative bg-white rounded-xl overflow-hidden w-full max-w-2xl h-[80vh] max-h-[800px] flex flex-col shadow-2xl animate-fade-in-up">
-            <div className="flex items-center justify-between p-4 border-b border-gray-100 shrink-0">
+          <div className="relative bg-white dark:bg-gray-800 rounded-2xl overflow-hidden w-full max-w-2xl h-[80vh] max-h-[800px] flex flex-col shadow-2xl animate-fade-in-up transition-colors">
+            <div className="flex items-center justify-between p-4 border-b border-gray-100 dark:border-gray-700 shrink-0">
               <div className="min-w-0 flex-1 mr-4">
                 <div className="flex items-center gap-2 mb-0.5">
-                  <span className="px-2 py-0.5 bg-blue-100 text-blue-600 text-xs rounded-full font-medium">
+                  <span className="px-2 py-0.5 bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-300 text-xs rounded-full font-medium">
                     AI 追问
                   </span>
-                  <span className="text-xs text-gray-400">
+                  <span className="text-xs text-gray-400 dark:text-gray-500">
                     {followUpMode === 'overview'
                       ? `基于全部 ${results.length} 条搜索结果`
                       : '基于当前页面原文'}
                   </span>
                 </div>
-                <h3 className="text-sm font-medium text-gray-800 truncate">
+                <h3 className="text-sm font-medium text-gray-800 dark:text-gray-100 truncate">
                   {followUpMode === 'overview'
                     ? '综合所有搜索结果追问'
                     : selectedResult?.title}
@@ -860,7 +870,7 @@ export function SearchResults({ showGLM = true, allowFollowUp = true }: SearchRe
               </div>
               <button
                 onClick={closeFollowUp}
-                className="text-gray-400 text-sm hover:text-gray-600 transition-colors shrink-0"
+                className="text-gray-400 dark:text-gray-500 text-sm hover:text-gray-600 dark:hover:text-gray-300 transition-colors shrink-0"
               >
                 关闭
               </button>
@@ -869,16 +879,16 @@ export function SearchResults({ showGLM = true, allowFollowUp = true }: SearchRe
             {/* 消息列表 */}
             <div
               ref={followUpScrollRef}
-              className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50"
+              className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50 dark:bg-gray-900 transition-colors"
             >
               {followUpMessages.length === 0 && !isFollowUpLoading && (
                 <div className="text-center py-12">
-                  <p className="text-gray-400 text-sm mb-2">
+                  <p className="text-gray-400 dark:text-gray-500 text-sm mb-2">
                     {followUpMode === 'overview'
                       ? `已加载全部 ${results.length} 条搜索结果作为参考上下文`
                       : '已加载该页面的原文作为参考上下文'}
                   </p>
-                  <p className="text-gray-400 text-xs">请在下方输入框向 AI 提问（可多轮追问）</p>
+                  <p className="text-gray-400 dark:text-gray-500 text-xs">请在下方输入框向 AI 提问（可多轮追问）</p>
                 </div>
               )}
               {followUpMessages.map((msg, idx) => {
@@ -887,7 +897,7 @@ export function SearchResults({ showGLM = true, allowFollowUp = true }: SearchRe
                 if (msg.role === 'user') {
                   return (
                     <div key={idx} className="flex justify-end">
-                      <div className="max-w-[80%] px-4 py-2.5 bg-gray-800 text-white text-sm rounded-2xl rounded-tr-sm whitespace-pre-wrap break-all">
+                      <div className="max-w-[80%] px-4 py-2.5 bg-gray-800 dark:bg-gray-100 text-white dark:text-gray-900 text-sm rounded-2xl rounded-tr-sm whitespace-pre-wrap break-all">
                         {msg.content}
                       </div>
                     </div>
@@ -914,13 +924,13 @@ export function SearchResults({ showGLM = true, allowFollowUp = true }: SearchRe
                     <Markdown content={msg.content} />
                   )
                 ) : (
-                  <span className="text-gray-400">正在思考...</span>
+                  <span className="text-gray-400 dark:text-gray-500">正在思考...</span>
                 );
                 return (
                   <div key={idx} className="flex justify-start">
-                    <div className="max-w-[90%] px-4 py-2.5 bg-white border border-gray-100 text-sm text-gray-700 rounded-2xl rounded-tl-sm shadow-sm leading-relaxed">
+                    <div className="max-w-[90%] px-4 py-2.5 bg-white dark:bg-gray-700 border border-gray-100 dark:border-gray-600 text-sm text-gray-700 dark:text-gray-200 rounded-2xl rounded-tl-sm shadow-sm leading-relaxed transition-colors">
                       {rendered}
-                      {showCursor && <span className="animate-blink text-gray-400 ml-0.5">▋</span>}
+                      {showCursor && <span className="animate-blink text-gray-400 dark:text-gray-500 ml-0.5">▋</span>}
                     </div>
                   </div>
                 );
@@ -928,7 +938,7 @@ export function SearchResults({ showGLM = true, allowFollowUp = true }: SearchRe
             </div>
 
             {/* 输入框 + 发送/停止 */}
-            <div className="p-4 border-t border-gray-100 bg-white shrink-0">
+            <div className="p-4 border-t border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 shrink-0 transition-colors">
               <div className="flex items-end gap-2">
                 <textarea
                   value={followUpInput}
@@ -942,12 +952,12 @@ export function SearchResults({ showGLM = true, allowFollowUp = true }: SearchRe
                   placeholder="输入你的问题，按 Enter 发送（Shift+Enter 换行）..."
                   rows={2}
                   disabled={isFollowUpLoading}
-                  className="flex-1 resize-none bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-800 placeholder-gray-400 outline-none focus:border-gray-400 disabled:bg-gray-100 disabled:cursor-not-allowed min-w-0"
+                  className="flex-1 resize-none bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl px-3 py-2 text-sm text-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 outline-none focus:border-gray-400 dark:focus:border-gray-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:cursor-not-allowed min-w-0 transition-colors"
                 />
                 {isFollowUpLoading ? (
                   <button
                     onClick={stopFollowUp}
-                    className="px-4 py-2 bg-red-50 border border-red-200 text-red-600 text-sm rounded-lg hover:bg-red-100 transition-colors shrink-0 whitespace-nowrap"
+                    className="px-4 py-2 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-300 text-sm rounded-full hover:bg-red-100 dark:hover:bg-red-900/50 transition-colors shrink-0 whitespace-nowrap"
                   >
                     停止
                   </button>
@@ -955,10 +965,10 @@ export function SearchResults({ showGLM = true, allowFollowUp = true }: SearchRe
                   <button
                     onClick={() => void sendFollowUp()}
                     disabled={!followUpInput.trim()}
-                    className={`px-5 py-2 text-sm rounded-lg shrink-0 whitespace-nowrap transition-all ${
+                    className={`px-5 py-2 text-sm rounded-full shrink-0 whitespace-nowrap transition-all ${
                       followUpInput.trim()
-                        ? 'bg-gray-800 text-white hover:bg-gray-700'
-                        : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                        ? 'bg-gray-800 dark:bg-gray-100 text-white dark:text-gray-900 hover:bg-gray-700 dark:hover:bg-white'
+                        : 'bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 cursor-not-allowed'
                     }`}
                   >
                     发送

@@ -5,6 +5,24 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>锐机超级搜索v5</title>
+    <script>
+      // 防 FOUC：在 React 加载前根据存储或系统偏好设置深色模式
+      (function () {
+        try {
+          var m = localStorage.getItem('rejsearch_theme');
+          var dark;
+          if (m === 'light') {
+            dark = false;
+          } else if (m === 'dark') {
+            dark = true;
+          } else {
+            // auto 或未设置：跟随系统
+            dark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+          }
+          if (dark) document.documentElement.classList.add('dark');
+        } catch (e) {}
+      })();
+    </script>
     <script type="module">
       if (import.meta.hot?.on) {
         import.meta.hot.on('vite:error', (error) => {
