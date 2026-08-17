@@ -4,6 +4,7 @@ import remarkGfm from 'remark-gfm';
 import { useSearchStore } from '../store/searchStore';
 import { summarizeContent, followUpStream, followUpOverviewStream, type FollowUpMessage } from '../lib/glm';
 import { SearchResult } from '../lib/anysearch';
+import { Watermark } from './Watermark';
 
 /** 复制代码块按钮 */
 function CodeBlock({ children }: { children: ReactNode }) {
@@ -39,7 +40,7 @@ function CodeBlock({ children }: { children: ReactNode }) {
 }
 
 /** Markdown 渲染：支持代码块、行内代码、加粗、列表、表格、引用、链接等 */
-function Markdown({ content }: { content: string }) {
+export function Markdown({ content }: { content: string }) {
   return (
     <div className="markdown-body text-sm text-gray-700 dark:text-gray-200 leading-relaxed">
       <ReactMarkdown
@@ -175,7 +176,7 @@ function injectBadges(node: ReactNode, results: SearchResult[]): ReactNode {
 }
 
 /** overview 模式专用：Markdown 渲染 + [N] 引用徽章 */
-function MarkdownWithBadges({ content, results }: { content: string; results: SearchResult[] }) {
+export function MarkdownWithBadges({ content, results }: { content: string; results: SearchResult[] }) {
   return (
     <div className="markdown-body text-sm text-gray-700 leading-relaxed">
       <ReactMarkdown
@@ -602,12 +603,15 @@ export function SearchResults({ showGLM = true, allowFollowUp = true }: SearchRe
         )}
 
         {showGLM && detailSummary && (
-          <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/30 border border-blue-100 dark:border-blue-800 rounded-2xl animate-fade-in-up">
-            <p className="text-xs text-blue-600 dark:text-blue-300 font-medium mb-1.5">AI 摘要</p>
-            <p className="text-sm text-gray-700 dark:text-gray-200 leading-relaxed">
-              {detailElements}
-              {isDetailLoading && <span className="animate-blink text-gray-400 dark:text-gray-500">▋</span>}
-            </p>
+          <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/30 border border-blue-100 dark:border-blue-800 rounded-2xl animate-fade-in-up relative overflow-hidden">
+            <Watermark colorClass="text-blue-600 dark:text-blue-200" />
+            <div className="relative z-10">
+              <p className="text-xs text-blue-600 dark:text-blue-300 font-medium mb-1.5">AI 摘要</p>
+              <p className="text-sm text-gray-700 dark:text-gray-200 leading-relaxed">
+                {detailElements}
+                {isDetailLoading && <span className="animate-blink text-gray-400 dark:text-gray-500">▋</span>}
+              </p>
+            </div>
           </div>
         )}
 
@@ -642,45 +646,48 @@ export function SearchResults({ showGLM = true, allowFollowUp = true }: SearchRe
 
         {/* AI 总体概括 */}
         {showGLM && (isOverviewLoading || overviewSummary) && (
-          <div className="mb-6 p-4 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl transition-colors">
-            <div className="flex items-center gap-2 mb-2">
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-200">AI 总体概括</span>
-              {isOverviewLoading && (
-                <div className="w-3.5 h-3.5 border-2 border-gray-300 dark:border-gray-600 border-t-gray-600 dark:border-t-gray-300 rounded-full animate-spin" />
+          <div className="mb-6 p-4 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl transition-colors relative overflow-hidden">
+            <Watermark />
+            <div className="relative z-10">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-200">AI 总体概括</span>
+                {isOverviewLoading && (
+                  <div className="w-3.5 h-3.5 border-2 border-gray-300 dark:border-gray-600 border-t-gray-600 dark:border-t-gray-300 rounded-full animate-spin" />
+                )}
+              </div>
+              {isOverviewLoading && !overviewSummary ? (
+                <p className="text-sm text-gray-400 dark:text-gray-500">GLM-4-Flash 正在解析所有搜索结果...</p>
+              ) : (
+                <>
+                  <p
+                    className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed"
+                    onClick={(e) => {
+                      const target = (e.target as HTMLElement).closest('[data-badge-index]');
+                      if (target) {
+                        const idx = parseInt(target.getAttribute('data-badge-index')!, 10);
+                        if (idx >= 0 && idx < results.length) {
+                          handleResultClick(results[idx], idx);
+                        }
+                      }
+                    }}
+                  >
+                    {overviewElements}
+                    {isOverviewLoading && <span className="animate-blink text-gray-400 dark:text-gray-500">▋</span>}
+                  </p>
+                  {!isOverviewLoading && showGLM && allowFollowUp && (
+                    <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
+                      <button
+                        type="button"
+                        onClick={() => openFollowUp('overview')}
+                        className="px-3 py-1.5 bg-blue-50 dark:bg-blue-900/40 text-blue-600 dark:text-blue-300 border border-blue-200 dark:border-blue-800 rounded-full text-sm hover:bg-blue-100 dark:hover:bg-blue-900/60 transition-colors"
+                      >
+                        基于所有结果向 AI 追问 ↗
+                      </button>
+                    </div>
+                  )}
+                </>
               )}
             </div>
-            {isOverviewLoading && !overviewSummary ? (
-              <p className="text-sm text-gray-400 dark:text-gray-500">GLM-4-Flash 正在解析所有搜索结果...</p>
-            ) : (
-              <>
-                <p
-                  className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed"
-                  onClick={(e) => {
-                    const target = (e.target as HTMLElement).closest('[data-badge-index]');
-                    if (target) {
-                      const idx = parseInt(target.getAttribute('data-badge-index')!, 10);
-                      if (idx >= 0 && idx < results.length) {
-                        handleResultClick(results[idx], idx);
-                      }
-                    }
-                  }}
-                >
-                  {overviewElements}
-                  {isOverviewLoading && <span className="animate-blink text-gray-400 dark:text-gray-500">▋</span>}
-                </p>
-                {!isOverviewLoading && showGLM && allowFollowUp && (
-                  <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
-                    <button
-                      type="button"
-                      onClick={() => openFollowUp('overview')}
-                      className="px-3 py-1.5 bg-blue-50 dark:bg-blue-900/40 text-blue-600 dark:text-blue-300 border border-blue-200 dark:border-blue-800 rounded-full text-sm hover:bg-blue-100 dark:hover:bg-blue-900/60 transition-colors"
-                    >
-                      基于所有结果向 AI 追问 ↗
-                    </button>
-                  </div>
-                )}
-              </>
-            )}
           </div>
         )}
 
@@ -817,12 +824,15 @@ export function SearchResults({ showGLM = true, allowFollowUp = true }: SearchRe
               )}
 
               {showGLM && detailSummary && (
-                <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/30 border border-blue-100 dark:border-blue-800 rounded-2xl animate-fade-in-up">
-                  <p className="text-xs text-blue-600 dark:text-blue-300 font-medium mb-1.5">AI 摘要</p>
-                  <p className="text-sm text-gray-700 dark:text-gray-200 leading-relaxed">
-                    {detailElements}
-                    {isDetailLoading && <span className="animate-blink text-gray-400 dark:text-gray-500">▋</span>}
-                  </p>
+                <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/30 border border-blue-100 dark:border-blue-800 rounded-2xl animate-fade-in-up relative overflow-hidden">
+                  <Watermark colorClass="text-blue-600 dark:text-blue-200" />
+                  <div className="relative z-10">
+                    <p className="text-xs text-blue-600 dark:text-blue-300 font-medium mb-1.5">AI 摘要</p>
+                    <p className="text-sm text-gray-700 dark:text-gray-200 leading-relaxed">
+                      {detailElements}
+                      {isDetailLoading && <span className="animate-blink text-gray-400 dark:text-gray-500">▋</span>}
+                    </p>
+                  </div>
                 </div>
               )}
 
@@ -928,9 +938,12 @@ export function SearchResults({ showGLM = true, allowFollowUp = true }: SearchRe
                 );
                 return (
                   <div key={idx} className="flex justify-start">
-                    <div className="max-w-[90%] px-4 py-2.5 bg-white dark:bg-gray-700 border border-gray-100 dark:border-gray-600 text-sm text-gray-700 dark:text-gray-200 rounded-2xl rounded-tl-sm shadow-sm leading-relaxed transition-colors">
-                      {rendered}
-                      {showCursor && <span className="animate-blink text-gray-400 dark:text-gray-500 ml-0.5">▋</span>}
+                    <div className="max-w-[90%] px-4 py-2.5 bg-white dark:bg-gray-700 border border-gray-100 dark:border-gray-600 text-sm text-gray-700 dark:text-gray-200 rounded-2xl rounded-tl-sm shadow-sm leading-relaxed transition-colors relative overflow-hidden">
+                      {msg.content && <Watermark />}
+                      <div className="relative z-10">
+                        {rendered}
+                        {showCursor && <span className="animate-blink text-gray-400 dark:text-gray-500 ml-0.5">▋</span>}
+                      </div>
                     </div>
                   </div>
                 );

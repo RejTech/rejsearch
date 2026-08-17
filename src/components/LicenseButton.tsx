@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, type ReactNode } from 'react';
 import { summarizeLicense } from '../lib/glm';
+import { Watermark } from './Watermark';
 
 /** 逐字浮入渲染许可证摘要，【允许做】绿色、【不允许做】红色。 */
 function renderAnimatedLicense(text: string) {
@@ -96,14 +97,17 @@ export function LicenseButton() {
                   {content}
                 </pre>
               ) : isLoading || summary ? (
-                <div className="space-y-4">
-                  <div className="flex items-center gap-2 mb-4">
-                    <span className="px-2 py-0.5 bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-300 text-xs rounded-full">AI 解析</span>
-                    <span className="text-xs text-gray-400 dark:text-gray-500">基于 GLM-4-Flash 生成</span>
-                  </div>
-                  <div className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
-                    {elements}
-                    {isLoading && <span className="animate-blink text-gray-400 dark:text-gray-500">▋</span>}
+                <div className="space-y-4 relative overflow-hidden rounded-2xl -mx-2 px-2 py-1">
+                  <Watermark />
+                  <div className="relative z-10">
+                    <div className="flex items-center gap-2 mb-4">
+                      <span className="px-2 py-0.5 bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-300 text-xs rounded-full">AI 解析</span>
+                      <span className="text-xs text-gray-400 dark:text-gray-500">基于 GLM-4-Flash 生成</span>
+                    </div>
+                    <div className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
+                      {elements}
+                      {isLoading && <span className="animate-blink text-gray-400 dark:text-gray-500">▋</span>}
+                    </div>
                   </div>
                 </div>
               ) : null}

@@ -43,11 +43,13 @@ async function callGLM(systemPrompt: string, userPrompt: string, maxTokens: numb
 /**
  * 流式调用 GLM（SSE），逐 token 返回内容，模拟生成式 AI 实时输出。
  * 支持传入完整 messages 数组（用于多轮对话场景）。
+ * options.signal：可选 AbortSignal，用于中断流式请求。
  */
 async function* callGLMStream(
   systemPrompt: string,
   userPrompt: string | ChatMessage[],
   maxTokens: number = 600,
+  options?: { signal?: AbortSignal },
 ): AsyncGenerator<string> {
   const messages: ChatMessage[] = Array.isArray(userPrompt)
     ? [{ role: 'system', content: systemPrompt }, ...userPrompt]
@@ -69,6 +71,7 @@ async function* callGLMStream(
       max_tokens: maxTokens,
       stream: true,
     }),
+    signal: options?.signal,
   });
 
   if (!response.ok) {
@@ -80,24 +83,32 @@ async function* callGLMStream(
   const decoder = new TextDecoder();
   let buffer = '';
 
-  for (;;) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    buffer += decoder.decode(value, { stream: true });
-    const lines = buffer.split('\n');
-    buffer = lines.pop() || '';
-    for (const line of lines) {
-      const trimmed = line.trim();
-      if (!trimmed || !trimmed.startsWith('data:')) continue;
-      const data = trimmed.slice(5).trim();
-      if (data === '[DONE]') return;
-      try {
-        const json = JSON.parse(data);
-        const content = json.choices?.[0]?.delta?.content;
-        if (content) yield content;
-      } catch {
-        // 忽略不完整的 JSON 行
+  try {
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() || '';
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed || !trimmed.startsWith('data:')) continue;
+        const data = trimmed.slice(5).trim();
+        if (data === '[DONE]') return;
+        try {
+          const json = JSON.parse(data);
+          const content = json.choices?.[0]?.delta?.content;
+          if (content) yield content;
+        } catch {
+          // 忽略不完整的 JSON 行
+        }
       }
+    }
+  } finally {
+    try {
+      reader.releaseLock();
+    } catch {
+      // 已释放则忽略
     }
   }
 }
@@ -363,6 +374,98 @@ ${snippets}
 
   let full = '';
   for await (const chunk of callGLMStream(systemPrompt, messages, 1500)) {
+    full += chunk;
+    onChunk?.(chunk);
+  }
+  return full;
+}
+
+/**
+ * AI 对话主导模式：从用户自然语言消息中提取搜索关键词（可多个）。
+ * 返回 1-3 个关键词，按优先级排序。
+ */
+export async function extractSearchQueries(userMessage: string): Promise<string[]> {
+  if (!userMessage.trim()) return [];
+
+  const prompt = `你是搜索关键词提取助手。根据用户的问题或需求，提取最适合用于搜索引擎检索的关键词。
+
+规则：
+1. 返回 1-3 个关键词，按重要性排序
+2. 关键词应当精炼（去掉"请问"、"帮我"等语气词）
+3. 每个关键词是独立的搜索查询，能覆盖用户需求的不同方面
+4. 若用户问题只涉及单一主题，只返回 1 个关键词
+5. 严格只输出 JSON 数组，不要有任何额外文字
+
+用户消息：${userMessage}
+
+请输出 JSON 数组，如 ["关键词1", "关键词2"]：`;
+
+  const raw = await callGLM(
+    '你是搜索关键词提取助手，擅长从自然语言中提炼搜索查询。',
+    prompt,
+    200,
+  );
+
+  // 提取 JSON 数组
+  const match = raw.match(/\[[\s\S]*\]/);
+  if (!match) return [userMessage.trim()];
+  try {
+    const arr = JSON.parse(match[0]);
+    if (Array.isArray(arr) && arr.length > 0) {
+      return arr.filter((s) => typeof s === 'string' && s.trim()).map((s) => s.trim()).slice(0, 3);
+    }
+  } catch {
+    // 解析失败回退
+  }
+  return [userMessage.trim()];
+}
+
+/**
+ * AI 对话主导模式：基于多轮搜索结果，流式回复用户。
+ * 把所有搜索结果（含正文摘要）作为上下文注入，AI 综合作答。
+ * options.signal：可选 AbortSignal，用于中断流式请求。
+ */
+export async function chatWithSearchStream(
+  userMessage: string,
+  searchResults: Array<{ query: string; results: SearchResult[] }>,
+  historyMessages: FollowUpMessage[],
+  onChunk?: (chunk: string) => void,
+  options?: { signal?: AbortSignal },
+): Promise<string> {
+  const systemPrompt =
+    '你是锐机超级搜索的 AI 对话助手。用户通过对话询问，系统已根据用户需求自动执行了多次搜索。' +
+    '请综合「参考搜索结果」进行回答，不要编造事实。若搜索结果不足以回答问题，请明确告知用户信息不足。' +
+    '回答使用简洁的中文，可使用 Markdown 语法（代码块、行内代码、加粗、列表、表格等）提升可读性。' +
+    '引用搜索结果时使用 [序号] 标注；同时引用多条时合并到一个方括号，例如 [1,2,3]。' +
+    '序号按「参考搜索结果」中的全局编号引用。';
+
+  // 拼接所有搜索结果（带全局序号）
+  const allResults: SearchResult[] = [];
+  const sections = searchResults.map((group) => {
+    const items = group.results.map((r) => {
+      const globalIdx = allResults.length + 1;
+      allResults.push(r);
+      return `[${globalIdx}] ${r.title}\n    URL: ${r.url}\n    摘要: ${r.snippet}\n    内容: ${(r.content || '').slice(0, 1500)}`;
+    }).join('\n\n');
+    return `## 搜索关键词: ${group.query}\n${items}`;
+  }).join('\n\n---\n\n');
+
+  const contextPrompt = `参考搜索结果（共 ${allResults.length} 条，来自 ${searchResults.length} 次搜索）：
+
+${sections}
+
+---
+用户最新消息：${userMessage}
+
+请基于以上搜索结果回答用户问题。`;
+
+  const messages: ChatMessage[] = [
+    { role: 'user', content: contextPrompt },
+    ...historyMessages.map<ChatMessage>((m) => ({ role: m.role, content: m.content })),
+  ];
+
+  let full = '';
+  for await (const chunk of callGLMStream(systemPrompt, messages, 1500, options)) {
     full += chunk;
     onChunk?.(chunk);
   }

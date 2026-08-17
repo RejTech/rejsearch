@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { SearchBar } from '../components/SearchBar';
 import { SearchResults } from '../components/SearchResults';
+import { ChatMode } from '../components/ChatMode';
 import { LicenseButton } from '../components/LicenseButton';
 import { ThemeToggle } from '../components/ThemeToggle';
 import { type EmbedConfig, DEFAULT_EMBED_CONFIG, buildEmbedUrl } from '../lib/embedConfig';
@@ -15,7 +16,10 @@ const TOGGLE_OPTIONS: { key: keyof EmbedConfig; label: string; desc: string }[] 
   { key: 'showVersion', label: '版本号', desc: '底部显示当前版本号' },
 ];
 
+type AppMode = 'search' | 'chat';
+
 export default function Home() {
+  const [mode, setMode] = useState<AppMode>('search');
   const [showCustomizeModal, setShowCustomizeModal] = useState(false);
   const [embedConfig, setEmbedConfig] = useState<EmbedConfig>(DEFAULT_EMBED_CONFIG);
   const [copied, setCopied] = useState(false);
@@ -38,10 +42,58 @@ export default function Home() {
 
   return (
     <div className="min-h-screen flex flex-col bg-white dark:bg-gray-900 transition-colors">
-      <div className="flex-1 py-12 px-4">
+      {/* 顶部标题（不随模式切换变化） */}
+      <div className="text-center pt-8 pb-2 px-4">
+        <h1 className="text-3xl font-semibold text-gray-800 dark:text-gray-100 mb-2">
+          锐机超级搜索v5
+        </h1>
+        <p className="text-gray-500 dark:text-gray-400 text-sm">智能检索，发现世界</p>
+      </div>
+
+      {/* 模式切换滑块 */}
+      <div className="pt-2 pb-2 px-4 flex justify-center">
+        <div className="inline-flex bg-gray-100 dark:bg-gray-800 rounded-full p-1 relative">
+          <div
+            className={`absolute top-1 bottom-1 left-1 w-[calc(50%-4px)] bg-white dark:bg-gray-700 rounded-full shadow-sm transition-transform duration-300 ${
+              mode === 'chat' ? 'translate-x-full' : 'translate-x-0'
+            }`}
+          />
+          <button
+            onClick={() => setMode('search')}
+            className={`relative z-10 w-[150px] text-center px-4 py-1.5 text-sm font-medium whitespace-nowrap transition-colors ${
+              mode === 'search'
+                ? 'text-gray-800 dark:text-gray-100'
+                : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+            }`}
+          >
+            搜索主导
+          </button>
+          <button
+            onClick={() => setMode('chat')}
+            className={`relative z-10 w-[150px] text-center px-4 py-1.5 text-sm font-medium whitespace-nowrap flex items-center justify-center gap-1.5 transition-colors ${
+              mode === 'chat'
+                ? 'text-gray-800 dark:text-gray-100'
+                : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+            }`}
+          >
+            <span className="whitespace-nowrap">AI 对话主导</span>
+            <span className="shrink-0 px-1 py-0.5 text-[10px] font-semibold rounded-full bg-blue-100 dark:bg-blue-900/60 text-blue-600 dark:text-blue-300 leading-none whitespace-nowrap">
+              BETA
+            </span>
+          </button>
+        </div>
+      </div>
+
+      <div className="flex-1 py-4 px-4">
         <div className="max-w-6xl mx-auto">
-          <SearchBar />
-          <SearchResults />
+          {mode === 'search' ? (
+            <>
+              <SearchBar showTitle={false} />
+              <SearchResults />
+            </>
+          ) : (
+            <ChatMode />
+          )}
         </div>
       </div>
 
