@@ -108,6 +108,21 @@ export function ChatMode() {
 
     setMessages((prev) => [...prev, userMsg, placeholder]);
 
+    let acc = '';
+    let firstChunkReceived = false;
+    let timedOut = false;
+
+    const markGeneratingDone = () => {
+      setMessages((prev) => {
+        const next = [...prev];
+        const steps = (next[assistantIdx].steps || []).map((s) =>
+          s.type === 'done' ? { ...s, status: 'done' as const } : s,
+        );
+        next[assistantIdx] = { ...next[assistantIdx], steps };
+        return next;
+      });
+    };
+
     try {
       let groups: Array<{ query: string; results: SearchResult[] }> = [];
 
@@ -197,19 +212,6 @@ export function ChatMode() {
         .filter((m) => m.content)
         .map((m) => ({ role: m.role, content: m.content }));
 
-      let acc = '';
-      let firstChunkReceived = false;
-      const markGeneratingDone = () => {
-        setMessages((prev) => {
-          const next = [...prev];
-          const steps = (next[assistantIdx].steps || []).map((s) =>
-            s.type === 'done' ? { ...s, status: 'done' as const } : s,
-          );
-          next[assistantIdx] = { ...next[assistantIdx], steps };
-          return next;
-        });
-      };
-
       const stream = chatWithSearchStream(
         text,
         groups,
@@ -232,7 +234,6 @@ export function ChatMode() {
       );
 
       // 首响应超时：60 秒内没有任何 chunk，自动判定失败
-      let timedOut = false;
       const timeoutId = window.setTimeout(() => {
         if (!firstChunkReceived) {
           timedOut = true;
