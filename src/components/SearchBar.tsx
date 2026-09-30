@@ -108,7 +108,7 @@ export function SearchBar({
       {showTitle && (
         <div className="text-center mb-8">
           <h1 className="text-3xl font-semibold text-gray-800 dark:text-gray-100 mb-2">
-            锐机超级搜索v5
+            锐机超级搜索v6
           </h1>
           <p className="text-gray-500 dark:text-gray-400 text-sm">智能检索，发现世界</p>
         </div>

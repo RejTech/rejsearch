@@ -178,14 +178,14 @@ function injectBadges(node: ReactNode, results: SearchResult[]): ReactNode {
 /** overview 模式专用：Markdown 渲染 + [N] 引用徽章 */
 export function MarkdownWithBadges({ content, results }: { content: string; results: SearchResult[] }) {
   return (
-    <div className="markdown-body text-sm text-gray-700 leading-relaxed">
+    <div className="markdown-body text-sm text-gray-700 dark:text-gray-200 leading-relaxed">
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         components={{
           code({ inline, className, children, ...props }: any) {
             if (inline) {
               return (
-                <code className="px-1 py-0.5 bg-gray-100 text-pink-600 rounded text-xs font-mono" {...props}>
+                <code className="px-1 py-0.5 bg-gray-100 dark:bg-gray-800 text-pink-600 dark:text-pink-400 rounded text-xs font-mono" {...props}>
                   {children}
                 </code>
               );
@@ -199,33 +199,33 @@ export function MarkdownWithBadges({ content, results }: { content: string; resu
             return <li>{injectBadges(children, results)}</li>;
           },
           h1({ children }) {
-            return <h1 className="text-base font-semibold my-2 text-gray-800">{injectBadges(children, results)}</h1>;
+            return <h1 className="text-base font-semibold my-2 text-gray-800 dark:text-gray-100">{injectBadges(children, results)}</h1>;
           },
           h2({ children }) {
-            return <h2 className="text-base font-semibold my-2 text-gray-800">{injectBadges(children, results)}</h2>;
+            return <h2 className="text-base font-semibold my-2 text-gray-800 dark:text-gray-100">{injectBadges(children, results)}</h2>;
           },
           h3({ children }) {
-            return <h3 className="text-sm font-semibold my-2 text-gray-800">{injectBadges(children, results)}</h3>;
+            return <h3 className="text-sm font-semibold my-2 text-gray-800 dark:text-gray-100">{injectBadges(children, results)}</h3>;
           },
           h4({ children }) {
-            return <h4 className="text-sm font-semibold my-1.5 text-gray-800">{injectBadges(children, results)}</h4>;
+            return <h4 className="text-sm font-semibold my-1.5 text-gray-800 dark:text-gray-100">{injectBadges(children, results)}</h4>;
           },
           blockquote({ children }) {
             return (
-              <blockquote className="my-2 pl-3 border-l-2 border-gray-200 text-gray-500 italic">
+              <blockquote className="my-2 pl-3 border-l-2 border-gray-200 dark:border-gray-600 text-gray-500 dark:text-gray-400 italic">
                 {children}
               </blockquote>
             );
           },
           a({ href, children }) {
             return (
-              <a href={href} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline hover:text-blue-800">
+              <a href={href} target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 underline hover:text-blue-800 dark:hover:text-blue-300">
                 {children}
               </a>
             );
           },
           strong({ children }) {
-            return <strong className="font-semibold text-gray-800">{children}</strong>;
+            return <strong className="font-semibold text-gray-800 dark:text-gray-100">{children}</strong>;
           },
           table({ children }) {
             return (
@@ -235,13 +235,13 @@ export function MarkdownWithBadges({ content, results }: { content: string; resu
             );
           },
           th({ children }) {
-            return <th className="border border-gray-200 px-2 py-1 bg-gray-50 text-gray-700 font-medium text-left">{children}</th>;
+            return <th className="border border-gray-200 dark:border-gray-600 px-2 py-1 bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-200 font-medium text-left">{children}</th>;
           },
           td({ children }) {
-            return <td className="border border-gray-200 px-2 py-1">{children}</td>;
+            return <td className="border border-gray-200 dark:border-gray-600 px-2 py-1">{children}</td>;
           },
           hr() {
-            return <hr className="my-3 border-gray-200" />;
+            return <hr className="my-3 border-gray-200 dark:border-gray-600" />;
           },
         }}
       >

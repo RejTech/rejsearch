@@ -1,6 +1,48 @@
-# 锐机超级搜索 v5 - 功能更新日志
+# 锐机超级搜索 v6 - 功能更新日志
 
 本文档详细记录了项目近期的核心功能迭代与技术优化。
+
+## v6（α.26.1001.3）
+
+### ✨ 新功能 (Features)
+
+#### 1. 锐机热搜专家（基于锐机智进数据库技术构建）
+- **技术来源澄清**：锐机智进是**自研的自进化数据库**，与搜索前端 rejsearch 属于相互独立的技术体系；热搜数据由基于该技术构建的 [RejHotSearchDB](https://github.com/RejTech/RejHotSearchDB) 归档提供。
+- **页面技术标注**：专家页面底部（榜单视图与选题后的检索工作流视图）固定展示「基于锐机智进数据库技术构建」。
+- **数据源**：新增 `src/lib/hotsearch.ts`，接入 [RejTech/RejHotSearchDB](https://github.com/RejTech/RejHotSearchDB) 定时归档 JSON，覆盖微博、知乎、百度、哔哩哔哩、抖音、今日头条六个平台。
+- **日期/时间点选择**：新增 `src/components/HotSearchExpert.tsx`，通过下拉菜单选择归档日期与当天抓取时间点（默认均为最新）；日期 key 原样使用数据端的 `YYYY-MM-DD`，不在前端做时区加工。
+- **平台榜单**：双列卡片展示热搜，浅蓝色圆形序号、热度值（过万转「万」）与「热/新/置顶」标签；默认前 10 条，可展开全部；抓取失败的平台单独提示。
+- **进入原工作流**：点击词条以热搜原词搜索；选中词条后可针对该热搜详细提问，搜索词恒为「热搜原词 + 问题」，保证 AnySearch 结果与热搜强相关；搜索结果完整复用结果列表、GLM 总体概括、详情面板、AI 追问与水印能力。
+
+#### 2. 三模式切换
+- 主页顶部滑块由双模式升级为「搜索主导 / AI 对话 / 热搜专家」三段式，滑块宽度与位移动画按三等分自适应。
+- 内嵌页（`/embed`）在功能可用时提供「超级搜索 / 热搜专家」标签切换。
+
+#### 3. 热搜功能可启用/禁用
+- `EmbedConfig` 新增 `showHotSearch`，URL 参数 `hotsearch=false` 可关闭；定制内嵌部件弹窗新增对应开关。
+- 热搜专家依赖内嵌搜索能力，`search=false` 时自动隐藏热搜标签。
+
+### 🛠 技术优化与修复 (Technical Improvements)
+
+#### 1. 热搜加速节点自动测速与智能降级
+- **四节点体系**：开发环境 Vite proxy 与生产环境 Netlify `_redirects` 统一提供四条同源路径：`/api/hotsearch-raw`（GitHub Raw 直连）、`/api/hotsearch-ghproxy`（gh-proxy.com 公益加速）、`/api/hotsearch-fastly`、`/api/hotsearch-gcore`（jsDelivr 双边缘）。
+- **自动测速**：进入热搜专家时并发请求四节点的 `index.json`（8 秒单节点超时、`no-store`），以完整收到响应的实测耗时排序，后续请求优先使用最快节点。
+- **结果缓存**：测速排序写入 localStorage（`hotsearch_node_rank_v1`，30 分钟有效），节点列表变更自动作废；并发调用共享同一次测速 Promise。
+- **智能降级**：正式请求按测速顺序逐节点尝试，单节点最多重试 2 次（间隔 350ms）；会话内连续失败的节点临时沉底，重新测速成功后恢复；四节点全部测速失败时按声明顺序兜底。
+- **可视化控制**：控制栏新增节点胶囊（显示当前节点与延迟，悬停展示全部节点测速结果）与「重新测速」按钮。
+- **代理前缀冲突修复**：Vite 代理基于 `startsWith(context)` 匹配，旧配置中 `/api/hotsearch` 会错误吞掉 `/api/hotsearch-fastly` 等路径；统一改为互不为前缀的 `/api/hotsearch-<name>` 命名。
+
+#### 2. 版本与文案
+- 产品名称统一更新为「锐机超级搜索 v6」（主页、搜索页、`index.html` title）。
+- 版本号升级为 `α.26.1001.3`，README 同步更新三模式、锐机智进技术来源说明、热搜四节点自动测速逻辑、代理配置与内嵌参数说明。
+
+### 涉及的新文件
+- `src/components/HotSearchExpert.tsx`：热搜专家组件（榜单浏览 + 选题提问 + 节点测速状态 + 接入搜索工作流）。
+- `src/lib/hotsearch.ts`：RejHotSearchDB 类型定义、索引/归档请求、节点并发测速/缓存/降级与格式化工具。
+
+---
+
+# 锐机超级搜索 v5 - 功能更新日志
 
 ## [Unreleased]
 

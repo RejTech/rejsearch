@@ -6,6 +6,7 @@ export interface EmbedConfig {
   showLicense: boolean;        // 是否显示许可证信息
   showVersion: boolean;        // 是否显示版本号
   allowInlineSearch: boolean;  // 是否允许内嵌页面内搜索（false 则跳转主页）
+  showHotSearch: boolean;      // 是否显示「锐机热搜专家」（按日期选择热搜进入检索工作流）
 }
 
 export const DEFAULT_EMBED_CONFIG: EmbedConfig = {
@@ -15,6 +16,7 @@ export const DEFAULT_EMBED_CONFIG: EmbedConfig = {
   showLicense: true,
   showVersion: true,
   allowInlineSearch: true,
+  showHotSearch: true,
 };
 
 /** 从 URL 查询参数解析内嵌配置（未指定时默认为 true） */
@@ -27,6 +29,7 @@ export function parseEmbedConfig(search: string): EmbedConfig {
     showLicense: params.get('license') !== 'false',
     showVersion: params.get('version') !== 'false',
     allowInlineSearch: params.get('search') !== 'false',
+    showHotSearch: params.get('hotsearch') !== 'false',
   };
 }
 
@@ -39,6 +42,7 @@ export function buildEmbedUrl(baseUrl: string, config: EmbedConfig): string {
   if (!config.showLicense) params.set('license', 'false');
   if (!config.showVersion) params.set('version', 'false');
   if (!config.allowInlineSearch) params.set('search', 'false');
+  if (!config.showHotSearch) params.set('hotsearch', 'false');
   const qs = params.toString();
   return qs ? `${baseUrl}/embed?${qs}` : `${baseUrl}/embed`;
 }

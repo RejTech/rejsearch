@@ -1,7 +1,7 @@
 {
   "name": "rejsearch",
   "private": true,
-  "version": "α.26.0817.1",
+  "version": "α.26.1001.3",
   "type": "module",
   "scripts": {
     "dev": "vite",
