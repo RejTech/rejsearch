@@ -568,14 +568,6 @@ export function HotSearchExpert({ showGLM = true, variant = 'desktop' }: HotSear
       {isWapList ? (
         /* WAP：顶部为悬浮按钮组，内容区下移让位；说明压缩为一行 */
         <>
-          <div className="pt-12 mb-3">
-            <span className="px-2.5 py-1 bg-blue-50 dark:bg-blue-900/40 text-blue-600 dark:text-blue-300 text-xs rounded-full font-medium">
-              锐机热搜专家
-            </span>
-            <p className="mt-2 text-xs text-gray-400 dark:text-gray-500">
-              点击词条检索 · 顶部可切换日期与节点
-            </p>
-          </div>
         </>
       ) : (
         <>
@@ -703,45 +695,46 @@ export function HotSearchExpert({ showGLM = true, variant = 'desktop' }: HotSear
                     const data = archive.platforms[key];
                     return data && data.success && data.list.length > 0;
                   });
-                  if (availablePlatforms.length === 0) {
-                    return (
-                      <p className="mt-6 text-center text-sm text-gray-400 dark:text-gray-500">
-                        本期暂无可用榜单
-                      </p>
-                    );
-                  }
                   return (
-                    <div className="mt-3 space-y-2">
-                      {availablePlatforms.map(({ key, name }) => {
-                        const data = archive.platforms[key];
-                        const preview = data.list[0].title;
-                        const count = data.list.length;
-                        const brief = platformBriefs[`${archive.date}-${archive.time}-${key}`];
-                        return (
-                          <button
-                            key={key}
-                            onClick={() => setSheetPlatform(key)}
-                            className="w-full flex items-center gap-3 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-full px-4 py-2.5 text-left transition-colors hover:bg-gray-50 dark:hover:bg-gray-700/60"
-                          >
-                            <span className="shrink-0 text-sm font-semibold text-gray-800 dark:text-gray-100">
-                              {name}
-                            </span>
-                            <span className="flex-1 min-w-0 text-xs text-gray-400 dark:text-gray-500 truncate">
-                              {brief ? (
-                                <span className="flex min-w-0 items-center gap-1.5">
-                                  <span className="shrink-0 rounded bg-blue-50 px-1 py-0.5 text-[9px] font-medium leading-none text-blue-500 dark:bg-blue-900/40 dark:text-blue-300">
-                                    AI
-                                  </span>
-                                  <span className="truncate">{brief}</span>
+                    <div className="flex min-h-[calc(100dvh-15rem)] flex-col justify-center pt-24">
+                      {availablePlatforms.length === 0 ? (
+                        <p className="text-center text-sm text-gray-400 dark:text-gray-500">
+                          本期暂无可用榜单
+                        </p>
+                      ) : (
+                        <div className="space-y-2">
+                          {availablePlatforms.map(({ key, name }) => {
+                            const data = archive.platforms[key];
+                            const preview = data.list[0].title;
+                            const count = data.list.length;
+                            const brief = platformBriefs[`${archive.date}-${archive.time}-${key}`];
+                            return (
+                              <button
+                                key={key}
+                                onClick={() => setSheetPlatform(key)}
+                                className="w-full flex items-center gap-3 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-full px-4 py-2.5 text-left transition-colors hover:bg-gray-50 dark:hover:bg-gray-700/60"
+                              >
+                                <span className="shrink-0 text-sm font-semibold text-gray-800 dark:text-gray-100">
+                                  {name}
                                 </span>
-                              ) : (
-                                <span className="truncate">{`${preview} 等 ${count} 条`}</span>
-                              )}
-                            </span>
-                            <span className="shrink-0 text-xs text-blue-600 dark:text-blue-400">查看 ›</span>
-                          </button>
-                        );
-                      })}
+                                <span className="flex-1 min-w-0 text-xs text-gray-400 dark:text-gray-500 truncate">
+                                  {brief ? (
+                                    <span className="flex min-w-0 items-center gap-1.5">
+                                      <span className="shrink-0 rounded bg-blue-50 px-1 py-0.5 text-[9px] font-medium leading-none text-blue-500 dark:bg-blue-900/40 dark:text-blue-300">
+                                        AI
+                                      </span>
+                                      <span className="truncate">{brief}</span>
+                                    </span>
+                                  ) : (
+                                    <span className="truncate">{`${preview} 等 ${count} 条`}</span>
+                                  )}
+                                </span>
+                                <span className="shrink-0 text-xs text-blue-600 dark:text-blue-400">查看 ›</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
                     </div>
                   );
                 })()
