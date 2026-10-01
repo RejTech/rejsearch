@@ -40,12 +40,6 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api\/hotsearch-ghproxy/, ''),
       },
-      // jsDelivr Fastly 边缘
-      '/api/hotsearch-fastly': {
-        target: 'https://fastly.jsdelivr.net/gh/RejTech/RejHotSearchDB@main/archives',
-        changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api\/hotsearch-fastly/, ''),
-      },
       // jsDelivr Gcore 边缘
       '/api/hotsearch-gcore': {
         target: 'https://gcore.jsdelivr.net/gh/RejTech/RejHotSearchDB@main/archives',

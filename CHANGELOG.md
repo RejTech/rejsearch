@@ -2,6 +2,30 @@
 
 本文档详细记录了项目近期的核心功能迭代与技术优化。
 
+## v6（α.26.1001.5）
+
+### ♻️ 调整 (Changes)
+
+#### 1. 移除 jsDelivr Fastly 备选节点
+- Fastly 边缘缓存滞后问题突出（详见 α.26.1001.4 修复记录），继续保留意义有限，节点体系由四个精简为三个：GitHub Raw 直连、gh-proxy 公益加速、jsDelivr Gcore。
+- 同步清理：`src/lib/hotsearch.ts` 节点定义、Vite 代理（`vite.config.ts`）、Netlify 边缘代理（`public/_redirects`）中的 `/api/hotsearch-fastly` 配置；localStorage 排序缓存因节点数量变化自动作废重测。
+
+---
+
+## v6（α.26.1001.4）
+
+### 🐛 问题修复 (Bug Fixes)
+
+#### 1. 修复 CDN 节点信息差导致热搜索引滞后
+- **问题**：节点选择原先仅按实测延迟排序，jsDelivr Fastly 通常延迟最低，但其 CDN 边缘缓存可能滞后数小时（实测索引停留在 01:26，而 GitHub 直连/gh-proxy 已更新至 09:52），导致用户看不到最新时间点与最新热搜。
+- **修复**：测速探测同时读取各节点 `index.json` 的 `updated` 时间戳，选路规则改为「**数据新鲜度优先、延迟次之**」——先按 `updated` 倒序，相同新鲜度再比延迟；滞后的 CDN 节点即使最快也排在最新节点之后。
+- localStorage 排序缓存键升级为 `hotsearch_node_rank_v2`（旧结构自动作废）；节点 tooltip 增加「最新/数据滞后」标注。
+
+#### 2. 索引每次访问强制重新拉取
+- `fetchHotSearchIndex` 改为 `cache: 'no-store'` 并附加 `_t` 时间戳参数，确保每次进入热搜专家都发起真实网络请求获取最新索引，不命中浏览器或代理缓存；归档请求保持不变（归档文件不可变，保留进程内缓存）。
+
+---
+
 ## v6（α.26.1001.3）
 
 ### ✨ 新功能 (Features)

@@ -18,7 +18,7 @@
 - **进入原工作流**：
   - 点击热搜词条 → 以热搜原词执行 AnySearch 搜索，复用结果列表、AI 总体概括、详情面板与 AI 追问的完整流程
   - 选中词条后可「针对该热搜详细提问」，搜索词恒为「热搜原词 + 问题」（如 `迪拜航空确认航班发生事故 最新进展`），确保搜索结果与对应热搜强相关
-- **数据可靠性**：热搜请求走同源加速节点，**进入页面时自动对 GitHub Raw 直连、gh-proxy.com 公益加速、jsDelivr Fastly、jsDelivr Gcore 四个节点并发测速**（请求极小的 index.json，8 秒超时），后续优先使用实测延迟最低的节点；最快节点请求失败时自动降级到次快节点（单节点重试 2 次），会话内连续失败的节点临时沉底。测速结果缓存于 localStorage（30 分钟有效），控制栏实时显示当前节点与延迟（悬停可看全部节点测速结果），并可点击「重新测速」手动刷新；归档在前端进程内缓存，切换日期/时间点不重复请求
+- **数据可靠性**：热搜请求走同源加速节点，**进入页面时自动对 GitHub Raw 直连、gh-proxy.com 公益加速、jsDelivr Gcore 三个节点并发探测**（请求极小的 index.json，8 秒超时）。节点选择**数据新鲜度优先、实测延迟次之**：以各节点索引的 `updated` 时间戳为准，返回最新索引的节点排在前面（规避 CDN 边缘缓存导致的信息差），新鲜度相同再比延迟；最快/最新节点请求失败时自动降级到次选节点（单节点重试 2 次），会话内连续失败的节点临时沉底。测速结果缓存于 localStorage（30 分钟有效），**索引本身每次进入热搜专家都强制 `no-store` 重新拉取**；控制栏实时显示当前节点与延迟（悬停可看全部节点延迟与「最新/数据滞后」标注），并可点击「重新测速」手动刷新；归档在前端进程内缓存，切换日期/时间点不重复请求
 - **可启用/禁用**：主页模式常驻；内嵌页通过 `hotsearch=false` 参数或定制弹窗开关关闭
 - **技术来源标注**：专家页面（榜单视图与进入检索后的工作流视图）底部固定展示「基于锐机智进数据库技术构建」
 
@@ -153,20 +153,20 @@ src/
 - 数据格式（见[数据仓库 README](https://github.com/RejTech/RejHotSearchDB)）：
   - 索引：`archives/index.json` → `{ updated, dates: { "YYYY-MM-DD": ["HH-mm", ...] } }`
   - 归档：`archives/{date}/{time}.json` → `{ date, time, timestamp, platforms: { weibo: { success, list: [...] }, ... } }`
-- 同源加速节点（自动测速后按延迟升序选择，失败自动降级）：
+- 同源加速节点（自动探测后按「索引新鲜度 → 延迟」排序选择，失败自动降级）：
 
 | 前端同源路径 | 实际节点 |
 |----------|----------|
 | `/api/hotsearch-raw/*` | `https://raw.githubusercontent.com/RejTech/RejHotSearchDB/main/archives/*`（GitHub 直连，内容最新） |
 | `/api/hotsearch-ghproxy/*` | `https://gh-proxy.com/https://raw.githubusercontent.com/RejTech/RejHotSearchDB/main/archives/*`（公益加速） |
-| `/api/hotsearch-fastly/*` | `https://fastly.jsdelivr.net/gh/RejTech/RejHotSearchDB@main/archives/*`（jsDelivr Fastly） |
 | `/api/hotsearch-gcore/*` | `https://gcore.jsdelivr.net/gh/RejTech/RejHotSearchDB@main/archives/*`（jsDelivr Gcore） |
 
-- 自动测速策略（实现见 `src/lib/hotsearch.ts`）：
-  1. 首次使用时并发请求四个节点的 `index.json`（`cache: no-store`，单节点 8 秒超时），以完整收到响应的耗时作为延迟；
-  2. 可用节点按延迟升序排列，失败节点沉尾；结果写入 localStorage（键 `hotsearch_node_rank_v1`，30 分钟有效）；
-  3. 索引与归档请求按测速顺序依次尝试，单节点最多 2 次（间隔 350ms），全部失败才报错；会话内连续失败的节点临时沉底，重新测速后恢复；
-  4. 控制栏提供「重新测速」按钮，可随时跳过缓存强制重测；四个节点全部测速失败时，按上表声明顺序兜底尝试。
+- 自动探测与选路策略（实现见 `src/lib/hotsearch.ts`）：
+  1. 首次使用时并发请求三个节点的 `index.json`（`cache: no-store`，单节点 8 秒超时），记录完整响应耗时与索引自报的 `updated` 时间戳；
+  2. 排序规则：可用节点先按 `updated` 倒序（**数据新鲜度优先，jsDelivr 等 CDN 缓存滞后时即使延迟最低也靠后**），`updated` 相同再按延迟升序；失败节点沉尾；
+  3. 排序结果写入 localStorage（键 `hotsearch_node_rank_v2`，30 分钟有效），节点列表变更自动作废；
+  4. 每次进入热搜专家，索引请求强制 `no-store` 并附带时间戳参数，保证拿到最新日期/时间点列表；归档请求按探测顺序逐节点尝试，单节点最多 2 次（间隔 350ms），全部失败才报错；会话内连续失败的节点临时沉底，重新测速后恢复；
+  5. 控制栏提供「重新测速」按钮，可随时跳过缓存强制重测（tooltip 标注各节点「最新/数据滞后」）；三个节点全部探测失败时，按上表声明顺序兜底尝试。
 - 开发环境：Vite dev server proxy；生产环境：Netlify 边缘代理（见 `public/_redirects`）
 - 归档保留最近 30 天，由数据仓库的 GitHub Actions 每小时抓取并重建索引
 
@@ -182,7 +182,7 @@ src/
 - 发布目录：`dist`
 - `public/_redirects` 配置：
   - `/api/anysearch/*` → 代理到 AnySearch API（状态码 200）
-  - `/api/hotsearch-raw/*`、`/api/hotsearch-ghproxy/*`、`/api/hotsearch-fastly/*`、`/api/hotsearch-gcore/*` → 代理到热搜库四个加速节点（状态码 200），由前端自动测速选择最快节点
+  - `/api/hotsearch-raw/*`、`/api/hotsearch-ghproxy/*`、`/api/hotsearch-gcore/*` → 代理到热搜库三个加速节点（状态码 200），由前端按「索引新鲜度优先、延迟次之」自动选路
   - `/*` → 回退到 `index.html`（SPA 路由）
 
 ## 嵌入式集成示例

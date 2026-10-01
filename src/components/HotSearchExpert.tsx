@@ -230,19 +230,28 @@ export function HotSearchExpert({ showGLM = true, allowFollowUp = true }: HotSea
     });
   };
 
-  // 测速后最快的可用节点（latency 可能为 null=该节点不可用）
+  // 测速后首位的可用节点（先按索引新鲜度、再按延迟排序）
   const bestEntry = rank?.entries.find((entry) => entry.latency !== null) ?? null;
   const bestNode = bestEntry
     ? HOTSEARCH_NODES.find((node) => node.key === bestEntry.key) ?? null
     : null;
-  /** 悬停节点胶囊时展示全部节点延迟 */
+  /** 悬停节点胶囊时展示全部节点测速结果，并标注索引数据新旧 */
   const rankTooltip = rank
-    ? rank.entries
-        .map((entry) => {
-          const node = HOTSEARCH_NODES.find((item) => item.key === entry.key);
-          return `${node?.label ?? entry.key}：${formatLatency(entry.latency)}`;
-        })
-        .join('\n')
+    ? (() => {
+        const freshUpdated = Math.max(
+          ...rank.entries.map((entry) => entry.updated ?? -Infinity),
+        );
+        return rank.entries
+          .map((entry) => {
+            const node = HOTSEARCH_NODES.find((item) => item.key === entry.key);
+            let freshness = '';
+            if (entry.latency !== null && entry.updated !== null) {
+              freshness = entry.updated >= freshUpdated ? '（最新）' : '（数据滞后）';
+            }
+            return `${node?.label ?? entry.key}：${formatLatency(entry.latency)}${freshness}`;
+          })
+          .join('\n');
+      })()
     : '';
 
   // 专家页面底部技术来源标注（榜单视图与工作流视图均展示）

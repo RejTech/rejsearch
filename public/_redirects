@@ -7,8 +7,7 @@
 /api/hotsearch-raw/*      https://raw.githubusercontent.com/RejTech/RejHotSearchDB/main/archives/:splat  200
 # gh-proxy.com 公益加速（/<完整 raw URL>）
 /api/hotsearch-ghproxy/*  https://gh-proxy.com/https://raw.githubusercontent.com/RejTech/RejHotSearchDB/main/archives/:splat  200
-# jsDelivr Fastly / Gcore 边缘
-/api/hotsearch-fastly/*   https://fastly.jsdelivr.net/gh/RejTech/RejHotSearchDB@main/archives/:splat  200
+# jsDelivr Gcore 边缘
 /api/hotsearch-gcore/*    https://gcore.jsdelivr.net/gh/RejTech/RejHotSearchDB@main/archives/:splat  200
 
 # SPA 路由回退：所有非文件请求交给 React Router 处理（/embed 等）
