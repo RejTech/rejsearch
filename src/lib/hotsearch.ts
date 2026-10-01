@@ -232,6 +232,7 @@ async function fetchJson<T>(
 
 /** 热搜平台标识（与 RejHotSearchDB scripts/fetch.js 的 PLATFORMS 键一致） */
 export type HotSearchPlatform =
+  | 'aihot'
   | 'weibo'
   | 'zhihu'
   | 'baidu'
@@ -245,7 +246,7 @@ export interface HotSearchItem {
   title: string;           // 热搜标题（作为搜索关键词使用）
   hot: number | string;    // 热度值（多数平台为数字，百度/知乎可能为字符串或空）
   url: string;            // 平台原生日志链接
-  label: string;           // 标签，如 "热" / "新" / "置顶"，可能为空
+  label: string;           // 标签：普通平台为 "热"/"新"/"置顶"；AIHOT 为资讯来源名（如 "OpenAI：Blog（RSS）"）
 }
 
 /** 单平台归档数据 */
@@ -269,8 +270,9 @@ export interface HotSearchIndex {
   dates: Record<string, string[]>; // date -> 可用时间点列表，如 {"2026-10-01": ["01-07","01-08"]}
 }
 
-/** 平台元数据（按固定顺序展示） */
+/** 平台元数据（按固定顺序展示，AIHOT 置顶） */
 export const PLATFORM_META: { key: HotSearchPlatform; name: string }[] = [
+  { key: 'aihot', name: 'AIHOT 热榜' },
   { key: 'weibo', name: '微博热搜' },
   { key: 'zhihu', name: '知乎热榜' },
   { key: 'baidu', name: '百度实时热点' },

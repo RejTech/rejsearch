@@ -11,9 +11,10 @@ interface SearchStore {
   searchHistory: string[];
   selectedResult: SearchResult | null;
   
-  // 总体概括
+  // 总体概括（带会话隔离：beginOverviewSession 之后的旧流输出一律丢弃）
   overviewSummary: string;
   isOverviewLoading: boolean;
+  overviewSessionId: number;
   
   // 单条详情概括
   detailSummary: string;
@@ -32,9 +33,11 @@ interface SearchStore {
   clearHistory: () => void;
   selectResult: (result: SearchResult | null) => void;
   
-  setOverviewSummary: (summary: string) => void;
-  appendOverviewSummary: (chunk: string) => void;
-  setOverviewLoading: (loading: boolean) => void;
+  setOverviewSummary: (summary: string, sessionId?: number) => void;
+  appendOverviewSummary: (chunk: string, sessionId?: number) => void;
+  setOverviewLoading: (loading: boolean, sessionId?: number) => void;
+  /** 开启新的概括会话：递增会话号、清空旧概括并复位加载态；返回新会话号 */
+  beginOverviewSession: () => number;
   setDetailSummary: (summary: string) => void;
   appendDetailSummary: (chunk: string) => void;
   setDetailLoading: (loading: boolean) => void;
@@ -72,6 +75,7 @@ export const useSearchStore = create<SearchStore>((set, get) => ({
   selectedResult: null,
   overviewSummary: '',
   isOverviewLoading: false,
+  overviewSessionId: 0,
   detailSummary: '',
   isDetailLoading: false,
   searchDirection: null,
@@ -106,9 +110,25 @@ export const useSearchStore = create<SearchStore>((set, get) => ({
 
   selectResult: (result) => set({ selectedResult: result }),
 
-  setOverviewSummary: (overviewSummary) => set({ overviewSummary }),
-  appendOverviewSummary: (chunk) => set((state) => ({ overviewSummary: state.overviewSummary + chunk })),
-  setOverviewLoading: (isOverviewLoading) => set({ isOverviewLoading }),
+  setOverviewSummary: (overviewSummary, sessionId) =>
+    set((state) =>
+      sessionId === undefined || state.overviewSessionId === sessionId ? { overviewSummary } : state,
+    ),
+  appendOverviewSummary: (chunk, sessionId) =>
+    set((state) =>
+      sessionId === undefined || state.overviewSessionId === sessionId
+        ? { overviewSummary: state.overviewSummary + chunk }
+        : state,
+    ),
+  setOverviewLoading: (isOverviewLoading, sessionId) =>
+    set((state) =>
+      sessionId === undefined || state.overviewSessionId === sessionId ? { isOverviewLoading } : state,
+    ),
+  beginOverviewSession: () => {
+    const overviewSessionId = get().overviewSessionId + 1;
+    set({ overviewSessionId, overviewSummary: '', isOverviewLoading: false });
+    return overviewSessionId;
+  },
   setDetailSummary: (detailSummary) => set({ detailSummary }),
   appendDetailSummary: (chunk) => set((state) => ({ detailSummary: state.detailSummary + chunk })),
   setDetailLoading: (isDetailLoading) => set({ isDetailLoading }),

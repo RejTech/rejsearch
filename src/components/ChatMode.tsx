@@ -20,7 +20,7 @@ interface ChatStep {
   status: 'pending' | 'active' | 'done' | 'error';
 }
 
-export function ChatMode() {
+export function ChatMode({ heightClass = 'h-[calc(100vh-180px)]' }: { heightClass?: string } = {}) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -325,7 +325,7 @@ export function ChatMode() {
   };
 
   return (
-    <div className="w-full max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col h-[calc(100vh-180px)]">
+    <div className={`w-full max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col ${heightClass}`}>
       {/* 顶部栏 */}
       <div className="flex items-center justify-between mb-3 shrink-0">
         <div className="flex items-center gap-2">

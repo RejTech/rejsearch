@@ -304,6 +304,44 @@ ${content.slice(0, 8000)}
 }
 
 /**
+ * WAP 热搜折叠卡概览：根据榜单全部词条整理一句中文概览
+ * （涉及哪些领域/圈子、产品或事件、人物或机构）。
+ * 结果按「榜单标识」进程内缓存，同一期榜单只调用一次。
+ */
+const platformBriefCache = new Map<string, string>();
+
+export async function summarizePlatformBrief(
+  cacheKey: string,
+  platformName: string,
+  titles: string[],
+): Promise<string> {
+  const cached = platformBriefCache.get(cacheKey);
+  if (cached !== undefined) return cached;
+  if (!titles.length) return '';
+
+  const prompt = `以下是热搜平台「${platformName}」当期的词条列表（按热度排序）：
+
+${titles.map((t, i) => `${i + 1}. ${t.slice(0, 40)}`).join('\n')}
+
+请根据以上词条内容，用一句不超过 60 字的中文概括本榜整体内容：
+涉及哪些领域或圈子、出现了哪些产品或事件、提到了哪些人物或机构。
+要求：
+1. 一句话，信息密度高，直接点名最具代表性的人名/产品名/机构名/事件名
+2. 不分行，不使用 Markdown、引号或任何前缀（如"该榜单"）
+3. 只输出这句话本身，不要解释`;
+
+  const raw = await callGLM(
+    '你是热搜榜单分析助手，擅长从一批热搜词条中提炼整体脉络并用一句话概括。',
+    prompt,
+    200,
+  );
+
+  const clean = raw.replace(/^["'「『]|["'」』]$/g, '').trim();
+  platformBriefCache.set(cacheKey, clean);
+  return clean;
+}
+
+/**
  * 追问对话：基于某条搜索结果的完整内容（标题+URL+原文），与 AI 进行多轮流式对话。
  * historyMessages：历史对话（不含当前系统提示与注入的原文），最后一条应当是最新的 user 提问。
  * onChunk：流式回调，逐 token 推送 AI 回复。

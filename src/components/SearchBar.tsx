@@ -31,6 +31,7 @@ export function SearchBar({
     setOverviewSummary,
     appendOverviewSummary,
     setOverviewLoading,
+    beginOverviewSession,
   } = useSearchStore();
 
   const [isFocused, setIsFocused] = useState(false);
@@ -49,7 +50,8 @@ export function SearchBar({
     setLoading(true);
     setQuery(q);
     addToHistory(q);
-    setOverviewSummary('');
+    // 开启新概括会话：清空旧概括并作废进行中的旧流（快速连续搜索时两路概括不再混合）
+    const overviewSession = beginOverviewSession();
 
     try {
       const response = await search({
@@ -58,12 +60,12 @@ export function SearchBar({
       });
       setResults(response.results, response.total);
 
-      // 搜索完成后触发 GLM 总体概括（流式输出）
+      // 搜索完成后触发 GLM 总体概括（流式输出，仅当前会话可写入）
       if (showGLM) {
-        setOverviewLoading(true);
-        summarizeOverview(q, response.results, (chunk) => appendOverviewSummary(chunk))
-          .catch(() => setOverviewSummary('AI 总体概括生成失败，请稍后重试'))
-          .finally(() => setOverviewLoading(false));
+        setOverviewLoading(true, overviewSession);
+        summarizeOverview(q, response.results, (chunk) => appendOverviewSummary(chunk, overviewSession))
+          .catch(() => setOverviewSummary('AI 总体概括生成失败，请稍后重试', overviewSession))
+          .finally(() => setOverviewLoading(false, overviewSession));
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : '搜索失败');
