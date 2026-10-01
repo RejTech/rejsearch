@@ -4,6 +4,7 @@ import remarkGfm from 'remark-gfm';
 import { useSearchStore } from '../store/searchStore';
 import { summarizeContent } from '../lib/glm';
 import { SearchResult } from '../lib/anysearch';
+import { FollowUpBar, FollowUpModal } from './FollowUpBar';
 import { Watermark } from './Watermark';
 
 /** 复制代码块按钮 */
@@ -319,6 +320,7 @@ export function SearchResults({
   const {
     results,
     total,
+    query,
     isLoading,
     error,
     selectedResult,
@@ -333,6 +335,8 @@ export function SearchResults({
   } = useSearchStore();
 
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
+  // 桌面追问模态开关（WAP 走 FollowUpBar 药丸，桌面由概括卡「AI 追问」按钮打开）
+  const [followUpOpen, setFollowUpOpen] = useState(false);
 
   // 分页：每页 10 条
   const PAGE_SIZE = 10;
@@ -539,6 +543,14 @@ export function SearchResults({
                 {isOverviewLoading && (
                   <div className="w-3.5 h-3.5 border-2 border-gray-300 dark:border-gray-600 border-t-gray-600 dark:border-t-gray-300 rounded-full animate-spin" />
                 )}
+                {variant !== 'wap' && !isOverviewLoading && overviewSummary && results.length > 0 && (
+                  <button
+                    onClick={() => setFollowUpOpen(true)}
+                    className="ml-auto inline-flex h-[30px] items-center rounded-full border border-gray-200/70 bg-white/70 px-3.5 text-xs text-gray-500 transition-colors hover:bg-gray-100 dark:border-gray-700 dark:bg-gray-800/70 dark:text-gray-400 dark:hover:bg-gray-700"
+                  >
+                    AI 追问
+                  </button>
+                )}
               </div>
               {isOverviewLoading && !overviewSummary ? (
                 <p className="text-sm text-gray-400 dark:text-gray-500">GLM-4-Flash 正在解析所有搜索结果...</p>
@@ -662,6 +674,21 @@ export function SearchResults({
           </div>
         </div>
       </div>
+
+      {/* WAP：结果生成完后在底栏上方显示「追问」药丸（热搜检索工作流内嵌本组件，同样生效） */}
+      {variant === 'wap' && !isLoading && results.length > 0 && (
+        <FollowUpBar query={query} groups={[{ query, results }]} />
+      )}
+
+      {/* 桌面：概括卡「AI 追问」按钮打开的追问模态 */}
+      {variant !== 'wap' && (
+        <FollowUpModal
+          open={followUpOpen}
+          onClose={() => setFollowUpOpen(false)}
+          query={query}
+          groups={[{ query, results }]}
+        />
+      )}
 
       {selectedResult && (
         <div className="fixed inset-0 z-50 lg:hidden">

@@ -100,6 +100,24 @@ html.dark ::-webkit-scrollbar-thumb:hover {
   animation: sheet-up 0.28s cubic-bezier(0.32, 0.72, 0, 1);
 }
 
+/* 滚动区上下边缘渐隐：内容滚过边缘时柔和淡出（追问栏消息区等） */
+.scroll-fade-y {
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    transparent 0,
+    #000 18px,
+    #000 calc(100% - 18px),
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    transparent 0,
+    #000 18px,
+    #000 calc(100% - 18px),
+    transparent 100%
+  );
+}
+
 /* 顶部下拉面板展开（从触发按钮下方滑落展开，iOS 曲线） */
 @keyframes panel-in {
   from {
