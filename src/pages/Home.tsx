@@ -82,9 +82,6 @@ export default function Home() {
             }`}
           >
             <span className="whitespace-nowrap">AI 自搜</span>
-            <span className="shrink-0 px-1 py-0.5 text-[10px] font-semibold rounded-full bg-blue-100 dark:bg-blue-900/60 text-blue-600 dark:text-blue-300 leading-none whitespace-nowrap">
-              BETA
-            </span>
           </button>
           <button
             onClick={() => setMode('hot')}
