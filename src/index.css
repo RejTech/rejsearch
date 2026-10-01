@@ -117,6 +117,19 @@ html.dark ::-webkit-scrollbar-thumb:hover {
   animation: panel-in 0.24s cubic-bezier(0.32, 0.72, 0, 1);
 }
 
+/* 胶囊 select：隐藏原生下拉箭头（贴边压圆角），改内嵌 chevron（右留 1rem 垂直居中），双主题适配 */
+.select-chevron {
+  -webkit-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 1rem center;
+}
+
+.dark .select-chevron {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+}
+
 /* LiquidGlass：高斯模糊毛玻璃 + 细描边 + 顶部内高光（WAP 底栏/顶栏） */
 .liquid-glass {
   background: rgba(255, 255, 255, 0.62);

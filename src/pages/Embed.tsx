@@ -57,11 +57,11 @@ export default function Embed() {
                 showGLM={config.showGLM}
               />
               {config.allowInlineSearch && (
-                <SearchResults showGLM={config.showGLM} allowFollowUp={config.showFollowUp} />
+                <SearchResults showGLM={config.showGLM} />
               )}
             </>
           ) : (
-            <HotSearchExpert showGLM={config.showGLM} allowFollowUp={config.showFollowUp} />
+            <HotSearchExpert showGLM={config.showGLM} />
           )}
         </div>
       </div>

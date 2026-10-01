@@ -8,7 +8,7 @@ type WapMode = 'search' | 'chat' | 'hot';
 
 const MODES: { key: WapMode; label: string }[] = [
   { key: 'search', label: '搜索' },
-  { key: 'chat', label: 'AI 对话' },
+  { key: 'chat', label: 'AI 自搜' },
   { key: 'hot', label: '热搜' },
 ];
 
@@ -36,7 +36,7 @@ export default function Wap() {
             <SearchResults variant="wap" />
           </>
         )}
-        {mode === 'chat' && <ChatMode heightClass="h-[calc(100dvh-160px)]" />}
+        {mode === 'chat' && <ChatMode variant="wap" />}
         {mode === 'hot' && <HotSearchExpert variant="wap" />}
       </main>
 

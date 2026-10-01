@@ -23,8 +23,6 @@ import {
 
 interface HotSearchExpertProps {
   showGLM?: boolean;
-  /** 是否允许向 AI 追问（透传给原工作流的 SearchResults） */
-  allowFollowUp?: boolean;
   /** 桌面：双列卡片+原地展开；WAP：平台折叠列表+底部弹窗展开 */
   variant?: 'desktop' | 'wap';
 }
@@ -40,7 +38,7 @@ interface SelectedTopic {
 
 const PREVIEW_COUNT = 10;
 
-export function HotSearchExpert({ showGLM = true, allowFollowUp = true, variant = 'desktop' }: HotSearchExpertProps = {}) {
+export function HotSearchExpert({ showGLM = true, variant = 'desktop' }: HotSearchExpertProps = {}) {
   const {
     setQuery,
     setResults,
@@ -111,7 +109,7 @@ export function HotSearchExpert({ showGLM = true, allowFollowUp = true, variant 
     return (
       <button
         onClick={() => handlePickItem(item, key, name)}
-        className="w-full flex items-center gap-3 px-2 py-2 rounded-2xl text-left hover:bg-gray-50 dark:hover:bg-gray-700/60 transition-colors"
+        className="w-full flex items-center gap-3 px-3 py-2 rounded-full text-left hover:bg-gray-50 dark:hover:bg-gray-700/60 transition-colors"
       >
         <span className="shrink-0 w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900/60 text-blue-600 dark:text-blue-300 text-xs font-medium flex items-center justify-center">
           {item.rank}
@@ -223,7 +221,7 @@ export function HotSearchExpert({ showGLM = true, allowFollowUp = true, variant 
   };
 
   /**
-   * 执行热搜检索：进入原有工作流（AnySearch 搜索 → 结果列表 → GLM 总体概括 → 详情/追问）。
+   * 执行热搜检索：进入原有工作流（AnySearch 搜索 → 结果列表 → GLM 总体概括 → 详情）。
    * 相关性保证：搜索词始终以热搜原词开头，extra 仅作为补充问题拼接在其后。
    */
   const executeSearch = async (
@@ -351,32 +349,45 @@ export function HotSearchExpert({ showGLM = true, allowFollowUp = true, variant 
           </a>
         )}
 
-        {/* WAP：置底「详细提问」药丸已移除——追问统一由底部展开追问栏承接
-            （SearchResults variant="wap" 渲染 idle 药丸「追问」按钮，提交后原地展开问答） */}
+        {/* WAP：置底「详细提问」药丸已移除（追问功能已移除） */}
 
         <div className={`w-full max-w-3xl mx-auto px-4 sm:px-6 lg:px-8${isWap ? ' pt-12' : ''}`}>
-          <div className="bg-blue-50/70 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 rounded-2xl p-4 sm:p-5">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="px-2 py-0.5 bg-blue-100 dark:bg-blue-900/60 text-blue-600 dark:text-blue-300 text-xs rounded-full font-medium">
+          {/* 热搜信息卡：LiquidGlass + 右上光斑，徽章行（模式/平台/时间/排名）+ 大标题；容器 24px 圆角，徽章行统一胶囊高度对齐 */}
+          <div className="liquid-glass rounded-3xl p-4 sm:p-5 relative overflow-hidden">
+            <div
+              aria-hidden
+              className="pointer-events-none absolute -top-10 -right-10 h-32 w-32 rounded-full bg-blue-400/15 dark:bg-blue-500/10 blur-2xl"
+            />
+            <div className="relative flex flex-wrap items-center gap-2">
+              <span className="inline-flex items-center px-2.5 py-1 bg-blue-100 dark:bg-blue-900/60 text-blue-600 dark:text-blue-300 text-xs rounded-full font-medium">
                 热搜专家模式
               </span>
-              <span className="px-2 py-0.5 bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 text-xs rounded-full border border-gray-200 dark:border-gray-700">
+              <span className="inline-flex items-center px-2.5 py-1 bg-white/70 dark:bg-gray-800/70 text-gray-600 dark:text-gray-300 text-xs rounded-full border border-white/70 dark:border-gray-700">
                 {topic.platformName}
               </span>
-              <span className="text-xs text-gray-400 dark:text-gray-500">
-                {topic.date} {formatTimeLabel(topic.time)} · 第 {topic.item.rank} 条
+              <span className="ml-auto inline-flex items-center gap-2 text-xs text-gray-400 dark:text-gray-500">
+                <span className="tabular-nums">
+                  {topic.date} {formatTimeLabel(topic.time)}
+                </span>
+                <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 dark:bg-blue-900/40 px-2.5 py-1 text-blue-600 dark:text-blue-300">
+                  第
+                  <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900/80 text-[10px] font-semibold leading-none">
+                    {topic.item.rank}
+                  </span>
+                  条
+                </span>
               </span>
               {!isWap && (
                 <button
                   onClick={backToList}
-                  className="ml-auto px-3 py-1 text-xs text-gray-500 dark:text-gray-400 rounded-full hover:bg-white dark:hover:bg-gray-800 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
+                  className="inline-flex items-center px-3 py-1 text-xs text-gray-500 dark:text-gray-400 rounded-full border border-gray-200/70 dark:border-gray-700 bg-white/60 dark:bg-gray-800/70 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
                 >
                   返回热搜榜
                 </button>
               )}
             </div>
 
-            <h2 className="mt-3 text-lg font-semibold leading-snug text-gray-800 dark:text-gray-100">
+            <h2 className="relative mt-3 text-xl font-semibold leading-snug tracking-tight text-gray-800 dark:text-gray-100">
               {topic.item.title}
             </h2>
 
@@ -423,8 +434,8 @@ export function HotSearchExpert({ showGLM = true, allowFollowUp = true, variant 
           </div>
         </div>
 
-        {/* 原工作流：结果列表 + AI 总体概括 + 详情面板/弹窗 + AI 追问 */}
-        <SearchResults showGLM={showGLM} allowFollowUp={allowFollowUp} variant={isWap ? 'wap' : 'desktop'} />
+        {/* 原工作流：结果列表 + AI 总体概括 + 详情面板/弹窗 */}
+        <SearchResults showGLM={showGLM} variant={isWap ? 'wap' : 'desktop'} />
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">{expertFooter}</div>
         {isWap && <div aria-hidden className="h-36" />}
       </div>
@@ -462,17 +473,18 @@ export function HotSearchExpert({ showGLM = true, allowFollowUp = true, variant 
             <>
               {/* 透明遮罩：点击面板外任意处收起 */}
               <div className="fixed inset-0 z-40" onClick={() => setWapPanel(null)} />
-              <div className="liquid-glass fixed left-3 right-3 top-[calc(max(0.75rem,env(safe-area-inset-top))+2.75rem)] z-50 mx-auto max-w-sm rounded-2xl p-4">
+              {/* 同心圆：容器圆角 32px = 内边距 12px + 内层胶囊圆角 20px，面板圆弧与内部胶囊共用圆心 */}
+              <div className="liquid-glass animate-panel-in fixed left-3 right-3 top-[calc(max(0.75rem,env(safe-area-inset-top))+2.75rem)] z-50 mx-auto max-w-sm rounded-[32px] p-3">
                 {wapPanel === 'time' ? (
                   <div className="space-y-3">
                     <div>
-                      <p className="mb-1 text-[10px] text-gray-400 dark:text-gray-500">日期</p>
+                      <p className="mb-1 px-2 text-[10px] text-gray-400 dark:text-gray-500">日期</p>
                       {dates.length > 0 ? (
                         <select
                           value={date}
                           onChange={handleDateChange}
                           disabled={indexLoading}
-                          className="w-full cursor-pointer rounded-full border border-gray-200/70 dark:border-gray-700 bg-white/70 dark:bg-gray-900/60 px-4 py-2 text-sm text-gray-700 dark:text-gray-200 outline-none disabled:opacity-60"
+                          className="select-chevron w-full cursor-pointer rounded-full border border-gray-200/70 dark:border-gray-700 bg-white/70 dark:bg-gray-900/60 pl-4 pr-10 py-2.5 text-sm text-gray-700 dark:text-gray-200 outline-none disabled:opacity-60"
                         >
                           {dates.map((d) => (
                             <option key={d} value={d}>
@@ -482,17 +494,17 @@ export function HotSearchExpert({ showGLM = true, allowFollowUp = true, variant 
                           ))}
                         </select>
                       ) : (
-                        <p className="text-xs text-gray-400">暂无归档日期</p>
+                        <p className="px-2 text-xs text-gray-400">暂无归档日期</p>
                       )}
                     </div>
                     <div>
-                      <p className="mb-1 text-[10px] text-gray-400 dark:text-gray-500">时间点</p>
+                      <p className="mb-1 px-2 text-[10px] text-gray-400 dark:text-gray-500">时间点</p>
                       {times.length > 1 ? (
                         <select
                           value={time}
                           onChange={handleTimeChange}
                           disabled={archiveLoading}
-                          className="w-full cursor-pointer rounded-full border border-gray-200/70 dark:border-gray-700 bg-white/70 dark:bg-gray-900/60 px-4 py-2 text-sm text-gray-700 dark:text-gray-200 outline-none disabled:opacity-60"
+                          className="select-chevron w-full cursor-pointer rounded-full border border-gray-200/70 dark:border-gray-700 bg-white/70 dark:bg-gray-900/60 pl-4 pr-10 py-2.5 text-sm text-gray-700 dark:text-gray-200 outline-none disabled:opacity-60"
                         >
                           {times.map((t) => (
                             <option key={t} value={t}>
@@ -502,7 +514,7 @@ export function HotSearchExpert({ showGLM = true, allowFollowUp = true, variant 
                           ))}
                         </select>
                       ) : (
-                        <p className="text-xs text-gray-400">当日仅有一个归档时间点</p>
+                        <p className="px-2 text-xs text-gray-400">当日仅有一个归档时间点</p>
                       )}
                     </div>
                     <button
@@ -511,7 +523,7 @@ export function HotSearchExpert({ showGLM = true, allowFollowUp = true, variant 
                         setWapPanel(null);
                       }}
                       disabled={indexLoading || archiveLoading}
-                      className="w-full rounded-full bg-gray-800/90 dark:bg-gray-100 px-4 py-2 text-sm text-white dark:text-gray-900 disabled:cursor-not-allowed disabled:opacity-50"
+                      className="w-full rounded-full bg-gray-800/90 dark:bg-gray-100 px-4 py-2.5 text-sm text-white dark:text-gray-900 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       刷新数据
                     </button>
@@ -520,7 +532,7 @@ export function HotSearchExpert({ showGLM = true, allowFollowUp = true, variant 
                   <div className="space-y-3">
                     <span
                       title={rankTooltip}
-                      className="block cursor-default truncate rounded-full border border-gray-200/70 dark:border-gray-700 bg-white/70 dark:bg-gray-900/60 px-4 py-2 text-center text-xs text-gray-500 dark:text-gray-400"
+                      className="block cursor-default truncate rounded-full border border-gray-200/70 dark:border-gray-700 bg-white/70 dark:bg-gray-900/60 px-4 py-2.5 text-center text-xs text-gray-500 dark:text-gray-400"
                     >
                       {speedTesting
                         ? '节点测速中…'
@@ -531,7 +543,7 @@ export function HotSearchExpert({ showGLM = true, allowFollowUp = true, variant 
                     <button
                       onClick={() => handleSpeedTest()}
                       disabled={speedTesting || indexLoading || archiveLoading}
-                      className="w-full rounded-full border border-gray-200/70 dark:border-gray-700 bg-white/70 dark:bg-gray-900/60 px-4 py-2 text-sm text-gray-700 dark:text-gray-200 disabled:cursor-not-allowed disabled:opacity-50"
+                      className="w-full rounded-full border border-gray-200/70 dark:border-gray-700 bg-white/70 dark:bg-gray-900/60 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       {speedTesting ? '测速中…' : '重新测速'}
                     </button>
@@ -541,7 +553,7 @@ export function HotSearchExpert({ showGLM = true, allowFollowUp = true, variant 
                         setWapPanel(null);
                       }}
                       disabled={indexLoading || archiveLoading}
-                      className="w-full rounded-full border border-gray-200/70 dark:border-gray-700 bg-white/70 dark:bg-gray-900/60 px-4 py-2 text-sm text-gray-700 dark:text-gray-200 disabled:cursor-not-allowed disabled:opacity-50"
+                      className="w-full rounded-full border border-gray-200/70 dark:border-gray-700 bg-white/70 dark:bg-gray-900/60 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       刷新数据
                     </button>
@@ -577,7 +589,7 @@ export function HotSearchExpert({ showGLM = true, allowFollowUp = true, variant 
                 value={date}
                 onChange={handleDateChange}
                 disabled={indexLoading}
-                className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-full px-4 py-1.5 text-sm text-gray-700 dark:text-gray-200 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/40 transition-all cursor-pointer disabled:opacity-60"
+                className="select-chevron bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-full pl-4 pr-10 py-1.5 text-sm text-gray-700 dark:text-gray-200 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/40 transition-all cursor-pointer disabled:opacity-60"
               >
                 {dates.map((d) => (
                   <option key={d} value={d}>
@@ -592,7 +604,7 @@ export function HotSearchExpert({ showGLM = true, allowFollowUp = true, variant 
                 value={time}
                 onChange={handleTimeChange}
                 disabled={archiveLoading}
-                className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-full px-4 py-1.5 text-sm text-gray-700 dark:text-gray-200 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/40 transition-all cursor-pointer disabled:opacity-60"
+                className="select-chevron bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-full pl-4 pr-10 py-1.5 text-sm text-gray-700 dark:text-gray-200 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/40 transition-all cursor-pointer disabled:opacity-60"
               >
                 {times.map((t) => (
                   <option key={t} value={t}>
@@ -628,7 +640,7 @@ export function HotSearchExpert({ showGLM = true, allowFollowUp = true, variant 
             </button>
           </div>
           <p className="text-center text-xs text-gray-400 dark:text-gray-500 mb-6">
-            选择日期与时间点查看各平台热搜榜，点击热搜词条即可进入检索与 AI 追问工作流
+            选择日期与时间点查看各平台热搜榜，点击热搜词条即可进入检索工作流
           </p>
         </>
       )}
@@ -709,7 +721,7 @@ export function HotSearchExpert({ showGLM = true, allowFollowUp = true, variant 
                           <button
                             key={key}
                             onClick={() => setSheetPlatform(key)}
-                            className="w-full flex items-center gap-3 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl px-4 py-3 text-left transition-colors hover:bg-gray-50 dark:hover:bg-gray-700/60"
+                            className="w-full flex items-center gap-3 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-full px-4 py-2.5 text-left transition-colors hover:bg-gray-50 dark:hover:bg-gray-700/60"
                           >
                             <span className="shrink-0 text-sm font-semibold text-gray-800 dark:text-gray-100">
                               {name}

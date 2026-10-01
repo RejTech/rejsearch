@@ -12,8 +12,7 @@ const TOGGLE_OPTIONS: { key: keyof EmbedConfig; label: string; desc: string }[] 
   { key: 'showTitle', label: '标题和副标题', desc: '显示「锐机超级搜索」标题与副标题' },
   { key: 'allowInlineSearch', label: '内嵌搜索', desc: '允许在内嵌页面内搜索（关闭则点击搜索跳转主页）' },
   { key: 'showGLM', label: 'GLM-4 摘要', desc: 'AI 总体概括（含引用徽章）与单条结果详情摘要' },
-  { key: 'showFollowUp', label: 'AI 追问', desc: '基于单条原文或所有结果的多轮对话（依赖 GLM-4）' },
-  { key: 'showHotSearch', label: '锐机热搜专家', desc: '按日期/时间点选择各平台热搜，点击词条直接进入检索与 AI 追问工作流' },
+  { key: 'showHotSearch', label: '锐机热搜专家', desc: '按日期/时间点选择各平台热搜，点击词条直接进入检索工作流' },
   { key: 'showLicense', label: '许可证信息', desc: '底部显示「本项目许可证」按钮（GLM 解析 GPLv3）' },
   { key: 'showVersion', label: '版本号', desc: '底部显示当前版本号' },
 ];
@@ -82,7 +81,7 @@ export default function Home() {
                 : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
             }`}
           >
-            <span className="whitespace-nowrap">AI 对话</span>
+            <span className="whitespace-nowrap">AI 自搜</span>
             <span className="shrink-0 px-1 py-0.5 text-[10px] font-semibold rounded-full bg-blue-100 dark:bg-blue-900/60 text-blue-600 dark:text-blue-300 leading-none whitespace-nowrap">
               BETA
             </span>

@@ -3,11 +3,6 @@ import { SearchResult } from './anysearch';
 const GLM_API_KEY = '838b59bb70234f5dbbff4748e6b58714.y6IBHlQe8RHw2gOA';
 const GLM_API_URL = 'https://open.bigmodel.cn/api/paas/v4/chat/completions';
 
-export interface FollowUpMessage {
-  role: 'user' | 'assistant';
-  content: string;
-}
-
 interface ChatMessage {
   role: 'system' | 'user' | 'assistant';
   content: string;
@@ -342,84 +337,7 @@ ${titles.map((t, i) => `${i + 1}. ${t.slice(0, 40)}`).join('\n')}
 }
 
 /**
- * 追问对话：基于某条搜索结果的完整内容（标题+URL+原文），与 AI 进行多轮流式对话。
- * historyMessages：历史对话（不含当前系统提示与注入的原文），最后一条应当是最新的 user 提问。
- * onChunk：流式回调，逐 token 推送 AI 回复。
- */
-export async function followUpStream(
-  result: { title: string; url: string; content: string },
-  historyMessages: FollowUpMessage[],
-  onChunk?: (chunk: string) => void,
-): Promise<string> {
-  const systemPrompt =
-    '你是锐机超级搜索的 AI 追问助手。用户正在阅读一条搜索结果，会根据页面原文向你追问。' +
-    '请基于「参考原文」进行回答，不要编造事实。若原文不足以回答问题，请明确告知用户。' +
-    '回答使用简洁的中文，可使用 Markdown 语法（代码块、行内代码、加粗、列表、表格等）来提升可读性。';
-
-  // 把「参考原文」作为多轮对话的第一条 user 消息注入，之后再拼接真实历史
-  const contextPrompt = `参考原文（请以此为回答依据）：
-标题：${result.title}
-URL：${result.url}
-原文内容：
-${(result.content || '').slice(0, 8000)}
-
----
-后续消息为用户基于此原文的追问，请结合以上原文作答。`;
-
-  const messages: ChatMessage[] = [
-    { role: 'user', content: contextPrompt },
-    ...historyMessages.map<ChatMessage>((m) => ({ role: m.role, content: m.content })),
-  ];
-
-  let full = '';
-  for await (const chunk of callGLMStream(systemPrompt, messages, 1500)) {
-    full += chunk;
-    onChunk?.(chunk);
-  }
-  return full;
-}
-
-/**
- * 基于所有搜索结果的追问对话：把每条结果的标题+URL+摘要拼成上下文，多轮对话。
- */
-export async function followUpOverviewStream(
-  results: SearchResult[],
-  historyMessages: FollowUpMessage[],
-  onChunk?: (chunk: string) => void,
-): Promise<string> {
-  if (!results.length) return '';
-
-  const systemPrompt =
-    '你是锐机超级搜索的 AI 追问助手。用户已通过搜索获得多条结果，会基于这些结果的总体概括向你追问。' +
-    '请综合所有「参考结果」进行回答，不要编造事实。若信息不足以回答问题，请明确告知用户。' +
-    '回答使用简洁的中文，可使用 Markdown 语法（代码块、行内代码、加粗、列表、表格等）来提升可读性。若引用某条结果，可用 [序号] 标注；同时引用多条时合并到一个方括号，例如 [1,2,3]。';
-
-  const snippets = results
-    .map((r, i) => `[${i + 1}] ${r.title}\n    URL: ${r.url}\n    摘要: ${r.snippet}`)
-    .join('\n\n');
-
-  const contextPrompt = `参考搜索结果（共 ${results.length} 条，请综合这些信息作答）：
-
-${snippets}
-
----
-后续消息为用户基于以上搜索结果的追问。若引用某条结果，可在回答中用 [序号] 标注；同时引用多条时合并到一个方括号，例如 [1,2,3]。`;
-
-  const messages: ChatMessage[] = [
-    { role: 'user', content: contextPrompt },
-    ...historyMessages.map<ChatMessage>((m) => ({ role: m.role, content: m.content })),
-  ];
-
-  let full = '';
-  for await (const chunk of callGLMStream(systemPrompt, messages, 1500)) {
-    full += chunk;
-    onChunk?.(chunk);
-  }
-  return full;
-}
-
-/**
- * AI 对话主导模式：从用户自然语言消息中提取搜索关键词（可多个）。
+ * AI 自搜模式：从用户自然语言消息中提取搜索关键词（可多个）。
  * 返回 1-3 个关键词，按优先级排序。
  */
 export async function extractSearchQueries(userMessage: string): Promise<string[]> {
@@ -459,19 +377,19 @@ export async function extractSearchQueries(userMessage: string): Promise<string[
 }
 
 /**
- * AI 对话主导模式：基于多轮搜索结果，流式回复用户。
+ * AI 自搜模式：基于搜索结果，流式回复用户。
  * 把所有搜索结果（含正文摘要）作为上下文注入，AI 综合作答。
  * options.signal：可选 AbortSignal，用于中断流式请求。
  */
 export async function chatWithSearchStream(
   userMessage: string,
   searchResults: Array<{ query: string; results: SearchResult[] }>,
-  historyMessages: FollowUpMessage[],
+  historyMessages: { role: 'user' | 'assistant'; content: string }[],
   onChunk?: (chunk: string) => void,
   options?: { signal?: AbortSignal },
 ): Promise<string> {
   const systemPrompt =
-    '你是锐机超级搜索的 AI 对话助手。用户通过对话询问，系统已根据用户需求自动执行了多次搜索。' +
+    '你是锐机超级搜索的 AI 自搜助手。用户提出问题，系统已根据用户需求自动执行了多次搜索。' +
     '请综合「参考搜索结果」进行回答，不要编造事实。若搜索结果不足以回答问题，请明确告知用户信息不足。' +
     '回答使用简洁的中文，可使用 Markdown 语法（代码块、行内代码、加粗、列表、表格等）提升可读性。' +
     '引用搜索结果时使用 [序号] 标注；同时引用多条时合并到一个方括号，例如 [1,2,3]。' +

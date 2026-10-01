@@ -2,7 +2,7 @@ import React, { useState, useMemo, useRef, useEffect, Fragment, type ReactNode }
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { useSearchStore } from '../store/searchStore';
-import { summarizeContent, followUpStream, followUpOverviewStream, type FollowUpMessage } from '../lib/glm';
+import { summarizeContent } from '../lib/glm';
 import { SearchResult } from '../lib/anysearch';
 import { Watermark } from './Watermark';
 
@@ -308,18 +308,14 @@ function renderAnimatedText(text: string) {
 
 interface SearchResultsProps {
   showGLM?: boolean;
-  /** 是否允许向 AI 追问（默认 true）；关闭时隐藏所有追问入口 */
-  allowFollowUp?: boolean;
-  /** 形态：desktop（默认，追问以弹窗呈现）/ wap（追问以底部展开栏呈现，概括卡内追问按钮隐藏） */
+  /** 形态：desktop（默认）/ wap（移动端形态） */
   variant?: 'desktop' | 'wap';
 }
 
 export function SearchResults({
   showGLM = true,
-  allowFollowUp = true,
   variant = 'desktop',
 }: SearchResultsProps = {}) {
-  const isWap = variant === 'wap';
   const {
     results,
     total,
@@ -360,15 +356,6 @@ export function SearchResults({
     }
   }, [currentPage]);
 
-  // 追问窗口状态：mode 为 'detail'（基于单条结果原文）或 'overview'（基于所有搜索结果）
-  const [followUpMode, setFollowUpMode] = useState<'detail' | 'overview' | null>(null);
-  const [showFollowUp, setShowFollowUp] = useState(false);
-  const [followUpMessages, setFollowUpMessages] = useState<FollowUpMessage[]>([]);
-  const [followUpInput, setFollowUpInput] = useState('');
-  const [isFollowUpLoading, setIsFollowUpLoading] = useState(false);
-  const followUpScrollRef = useRef<HTMLDivElement>(null);
-  const followUpAbortRef = useRef<{ cancelled: boolean }>({ cancelled: false });
-
   // 逐字浮入动画：基于 GLM 流式输出的实际文本，每个字符独立动画
   const overviewElements = useMemo(
     () => renderAnimatedOverview(overviewSummary, results),
@@ -378,20 +365,6 @@ export function SearchResults({
     () => renderAnimatedText(detailSummary),
     [detailSummary],
   );
-
-  // 追问消息列表有变化时自动滚到底部
-  useEffect(() => {
-    if (showFollowUp && followUpScrollRef.current) {
-      followUpScrollRef.current.scrollTop = followUpScrollRef.current.scrollHeight;
-    }
-  }, [showFollowUp, followUpMessages, isFollowUpLoading]);
-
-  // 关闭追问窗口时清理生成中状态
-  useEffect(() => {
-    if (!showFollowUp) {
-      followUpAbortRef.current.cancelled = true;
-    }
-  }, [showFollowUp]);
 
   const handleResultClick = async (result: typeof results[0], index: number) => {
     setActiveIndex(index);
@@ -430,106 +403,11 @@ export function SearchResults({
     setDetailLoading(false);
   };
 
-  // 打开追问窗口：mode='detail' 基于单条原文，mode='overview' 基于所有结果
-  const openFollowUp = (mode: 'detail' | 'overview') => {
-    if (mode === 'detail' && !selectedResult) return;
-    setFollowUpMode(mode);
-    setFollowUpMessages([]);
-    setFollowUpInput('');
-    setIsFollowUpLoading(false);
-    setShowFollowUp(true);
-  };
-
-  const closeFollowUp = () => {
-    followUpAbortRef.current.cancelled = true;
-    setShowFollowUp(false);
-    setIsFollowUpLoading(false);
-    setFollowUpMode(null);
-  };
-
-  // 发送追问消息（多轮 + 流式）：根据模式调用对应后端
-  const sendFollowUp = async () => {
-    if (followUpMode === 'detail' && !selectedResult) return;
-    if (followUpMode === 'overview' && results.length === 0) return;
-    const text = followUpInput.trim();
-    if (!text || isFollowUpLoading) return;
-
-    const userMsg: FollowUpMessage = { role: 'user', content: text };
-    const nextMessages = [...followUpMessages, userMsg];
-    setFollowUpMessages(nextMessages);
-    setFollowUpInput('');
-    setIsFollowUpLoading(true);
-
-    // 先放入一条空的 assistant 消息，随后流式追加内容
-    const assistantIdx = nextMessages.length;
-    setFollowUpMessages([...nextMessages, { role: 'assistant', content: '' }]);
-
-    const abortToken = { cancelled: false };
-    followUpAbortRef.current = abortToken;
-
-    const onChunk = (chunk: string) => {
-      if (abortToken.cancelled) return;
-      setFollowUpMessages((prev) => {
-        const updated = [...prev];
-        if (updated[assistantIdx]) {
-          updated[assistantIdx] = {
-            role: 'assistant',
-            content: (updated[assistantIdx].content || '') + chunk,
-          };
-        }
-        return updated;
-      });
-    };
-
-    try {
-      if (followUpMode === 'overview') {
-        await followUpOverviewStream(results, nextMessages, onChunk);
-      } else if (selectedResult) {
-        await followUpStream(
-          { title: selectedResult.title, url: selectedResult.url, content: selectedResult.content || '' },
-          nextMessages,
-          onChunk,
-        );
-      }
-    } catch {
-      if (!abortToken.cancelled) {
-        setFollowUpMessages((prev) => {
-          const updated = [...prev];
-          if (updated[assistantIdx] && !updated[assistantIdx].content) {
-            updated[assistantIdx] = {
-              role: 'assistant',
-              content: 'AI 追问失败，请稍后重试',
-            };
-          }
-          return updated;
-        });
-      }
-    } finally {
-      if (!abortToken.cancelled) {
-        setIsFollowUpLoading(false);
-      }
-    }
-  };
-
-  const stopFollowUp = () => {
-    followUpAbortRef.current.cancelled = true;
-    setIsFollowUpLoading(false);
-  };
-
-  // 渲染「向 AI 追问」按钮 + 跳转链接（桌面和移动端详情共用）
+  // 详情底部跳转链接（桌面和移动端详情共用）
   const renderDetailFooter = () => {
     if (!selectedResult) return null;
     return (
       <div className="mt-4 flex flex-col gap-2">
-        {showGLM && allowFollowUp && !isWap && (
-          <button
-            type="button"
-            onClick={() => openFollowUp('detail')}
-            className="w-full py-2 text-sm rounded-full transition-colors bg-blue-50 dark:bg-blue-900/40 text-blue-600 dark:text-blue-300 border border-blue-200 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-900/60"
-          >
-            向 AI 追问 ↗
-          </button>
-        )}
         <a
           href={selectedResult.url}
           target="_blank"
@@ -681,17 +559,6 @@ export function SearchResults({
                     {overviewElements}
                     {isOverviewLoading && <span className="animate-blink text-gray-400 dark:text-gray-500">▋</span>}
                   </p>
-                  {!isOverviewLoading && showGLM && allowFollowUp && !isWap && (
-                    <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
-                      <button
-                        type="button"
-                        onClick={() => openFollowUp('overview')}
-                        className="px-3 py-1.5 bg-blue-50 dark:bg-blue-900/40 text-blue-600 dark:text-blue-300 border border-blue-200 dark:border-blue-800 rounded-full text-sm hover:bg-blue-100 dark:hover:bg-blue-900/60 transition-colors"
-                      >
-                        基于所有结果向 AI 追问 ↗
-                      </button>
-                    </div>
-                  )}
                 </>
               )}
             </div>
@@ -857,284 +724,6 @@ export function SearchResults({
             </div>
           </div>
         </div>
-      )}
-
-      {/* 追问对话窗口（新窗口模态；WAP 形态改用底部展开追问栏，不弹窗） */}
-      {!isWap && showFollowUp && (selectedResult || followUpMode === 'overview') && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
-          <div
-            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-            onClick={closeFollowUp}
-          />
-          <div className="relative bg-white dark:bg-gray-800 rounded-2xl overflow-hidden w-full max-w-2xl h-[80vh] max-h-[800px] flex flex-col shadow-2xl animate-fade-in-up transition-colors">
-            <div className="flex items-center justify-between p-4 border-b border-gray-100 dark:border-gray-700 shrink-0">
-              <div className="min-w-0 flex-1 mr-4">
-                <div className="flex items-center gap-2 mb-0.5">
-                  <span className="px-2 py-0.5 bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-300 text-xs rounded-full font-medium">
-                    AI 追问
-                  </span>
-                  <span className="text-xs text-gray-400 dark:text-gray-500">
-                    {followUpMode === 'overview'
-                      ? `基于全部 ${results.length} 条搜索结果`
-                      : '基于当前页面原文'}
-                  </span>
-                </div>
-                <h3 className="text-sm font-medium text-gray-800 dark:text-gray-100 truncate">
-                  {followUpMode === 'overview'
-                    ? '综合所有搜索结果追问'
-                    : selectedResult?.title}
-                </h3>
-              </div>
-              <button
-                onClick={closeFollowUp}
-                className="text-gray-400 dark:text-gray-500 text-sm hover:text-gray-600 dark:hover:text-gray-300 transition-colors shrink-0"
-              >
-                关闭
-              </button>
-            </div>
-
-            {/* 消息列表 */}
-            <div
-              ref={followUpScrollRef}
-              className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50 dark:bg-gray-900 transition-colors"
-            >
-              {followUpMessages.length === 0 && !isFollowUpLoading && (
-                <div className="text-center py-12">
-                  <p className="text-gray-400 dark:text-gray-500 text-sm mb-2">
-                    {followUpMode === 'overview'
-                      ? `已加载全部 ${results.length} 条搜索结果作为参考上下文`
-                      : '已加载该页面的原文作为参考上下文'}
-                  </p>
-                  <p className="text-gray-400 dark:text-gray-500 text-xs">请在下方输入框向 AI 提问（可多轮追问）</p>
-                </div>
-              )}
-              {followUpMessages.map((msg, idx) => {
-                const isLast = idx === followUpMessages.length - 1;
-                const showCursor = isLast && msg.role === 'assistant' && isFollowUpLoading;
-                if (msg.role === 'user') {
-                  return (
-                    <div key={idx} className="flex justify-end">
-                      <div className="max-w-[80%] px-4 py-2.5 bg-gray-800 dark:bg-gray-100 text-white dark:text-gray-900 text-sm rounded-2xl rounded-tr-sm whitespace-pre-wrap break-all">
-                        {msg.content}
-                      </div>
-                    </div>
-                  );
-                }
-                // assistant：渲染 Markdown；overview 模式支持 [N] 徽章点击跳转结果
-                const rendered = msg.content ? (
-                  followUpMode === 'overview' ? (
-                    <div
-                      onClick={(e) => {
-                        const target = (e.target as HTMLElement).closest('[data-badge-index]');
-                        if (target) {
-                          const nIdx = parseInt(target.getAttribute('data-badge-index')!, 10);
-                          if (nIdx >= 0 && nIdx < results.length) {
-                            handleResultClick(results[nIdx], nIdx);
-                            closeFollowUp();
-                          }
-                        }
-                      }}
-                    >
-                      <MarkdownWithBadges content={msg.content} results={results} />
-                    </div>
-                  ) : (
-                    <Markdown content={msg.content} />
-                  )
-                ) : (
-                  <span className="text-gray-400 dark:text-gray-500">正在思考...</span>
-                );
-                return (
-                  <div key={idx} className="flex justify-start">
-                    <div className="max-w-[90%] px-4 py-2.5 bg-white dark:bg-gray-700 border border-gray-100 dark:border-gray-600 text-sm text-gray-700 dark:text-gray-200 rounded-2xl rounded-tl-sm shadow-sm leading-relaxed transition-colors relative overflow-hidden">
-                      {msg.content && <Watermark />}
-                      <div className="relative z-10">
-                        {rendered}
-                        {showCursor && <span className="animate-blink text-gray-400 dark:text-gray-500 ml-0.5">▋</span>}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* 输入框 + 发送/停止 */}
-            <div className="p-4 border-t border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 shrink-0 transition-colors">
-              <div className="flex items-end gap-2">
-                <textarea
-                  value={followUpInput}
-                  onChange={(e) => setFollowUpInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                      e.preventDefault();
-                      void sendFollowUp();
-                    }
-                  }}
-                  placeholder="输入你的问题，按 Enter 发送（Shift+Enter 换行）..."
-                  rows={2}
-                  disabled={isFollowUpLoading}
-                  className="flex-1 resize-none bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl px-3 py-2 text-sm text-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 outline-none focus:border-gray-400 dark:focus:border-gray-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:cursor-not-allowed min-w-0 transition-colors"
-                />
-                {isFollowUpLoading ? (
-                  <button
-                    onClick={stopFollowUp}
-                    className="px-4 py-2 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-300 text-sm rounded-full hover:bg-red-100 dark:hover:bg-red-900/50 transition-colors shrink-0 whitespace-nowrap"
-                  >
-                    停止
-                  </button>
-                ) : (
-                  <button
-                    onClick={() => void sendFollowUp()}
-                    disabled={!followUpInput.trim()}
-                    className={`px-5 py-2 text-sm rounded-full shrink-0 whitespace-nowrap transition-all ${
-                      followUpInput.trim()
-                        ? 'bg-gray-800 dark:bg-gray-100 text-white dark:text-gray-900 hover:bg-gray-700 dark:hover:bg-white'
-                        : 'bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 cursor-not-allowed'
-                    }`}
-                  >
-                    发送
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* WAP：底部追问栏（浮于标签栏上方）——idle 为与底栏等宽的药丸，提交后展开为问答栏 */}
-      {isWap && allowFollowUp && results.length > 0 && (
-        !showFollowUp ? (
-          /* idle：概括完成后出现的全宽药丸「追问」按钮 */
-          !isOverviewLoading && (
-            <div className="fixed inset-x-3 bottom-[calc(max(0.75rem,env(safe-area-inset-bottom))+4.5rem)] z-40 animate-fade-in-up">
-              <button
-                onClick={() => openFollowUp('overview')}
-                className="liquid-glass w-full rounded-full py-3 flex items-center justify-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-200"
-              >
-                追问
-                <span className="text-xs font-normal text-gray-400 dark:text-gray-500">
-                  基于全部 {results.length} 条结果向 AI 提问
-                </span>
-              </button>
-            </div>
-          )
-        ) : (
-          /* active：展开的问答栏（多轮），带引用徽章可跳结果 */
-          <div className="fixed inset-x-3 bottom-[calc(max(0.75rem,env(safe-area-inset-bottom))+4.5rem)] z-40 max-h-[62dvh] flex flex-col liquid-glass rounded-2xl overflow-hidden shadow-lg animate-fade-in-up">
-            <div className="flex items-center justify-between px-4 pt-2.5 pb-1.5 shrink-0">
-              <div className="flex items-center gap-2 min-w-0">
-                <span className="px-2 py-0.5 bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-300 text-[10px] rounded-full font-medium shrink-0">
-                  AI 追问
-                </span>
-                <span className="text-[11px] text-gray-400 dark:text-gray-500 truncate">
-                  {followUpMode === 'overview'
-                    ? `基于全部 ${results.length} 条搜索结果`
-                    : '基于当前页面原文'}
-                </span>
-              </div>
-              <button
-                onClick={closeFollowUp}
-                className="text-xs text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 shrink-0 ml-2"
-              >
-                收起
-              </button>
-            </div>
-
-            <div
-              ref={followUpScrollRef}
-              className="flex-1 min-h-0 overflow-y-auto px-3.5 pb-1 space-y-2.5"
-            >
-              {followUpMessages.length === 0 && !isFollowUpLoading && (
-                <p className="text-center text-xs text-gray-400 dark:text-gray-500 py-4">
-                  已加载全部结果作为上下文，请在下方输入问题
-                </p>
-              )}
-              {followUpMessages.map((msg, idx) => {
-                const isLast = idx === followUpMessages.length - 1;
-                const showCursor = isLast && msg.role === 'assistant' && isFollowUpLoading;
-                if (msg.role === 'user') {
-                  return (
-                    <div key={idx} className="flex justify-end">
-                      <div className="max-w-[85%] px-3.5 py-2 bg-gray-800 dark:bg-gray-100 text-white dark:text-gray-900 text-sm rounded-2xl rounded-tr-sm whitespace-pre-wrap break-all">
-                        {msg.content}
-                      </div>
-                    </div>
-                  );
-                }
-                const rendered = msg.content ? (
-                  <div
-                    onClick={(e) => {
-                      const target = (e.target as HTMLElement).closest('[data-badge-index]');
-                      if (target) {
-                        const nIdx = parseInt(target.getAttribute('data-badge-index')!, 10);
-                        if (nIdx >= 0 && nIdx < results.length) {
-                          handleResultClick(results[nIdx], nIdx);
-                          closeFollowUp();
-                        }
-                      }
-                    }}
-                  >
-                    <MarkdownWithBadges content={msg.content} results={results} />
-                  </div>
-                ) : (
-                  <span className="text-sm text-gray-400 dark:text-gray-500">正在思考...</span>
-                );
-                return (
-                  <div key={idx} className="flex justify-start">
-                    <div className="max-w-[90%] px-3.5 py-2 bg-white/80 dark:bg-gray-800/80 border border-white/50 dark:border-gray-700 text-sm text-gray-700 dark:text-gray-200 rounded-2xl rounded-tl-sm leading-relaxed relative overflow-hidden">
-                      {msg.content && <Watermark />}
-                      <div className="relative z-10">
-                        {rendered}
-                        {showCursor && (
-                          <span className="animate-blink text-gray-400 dark:text-gray-500 ml-0.5">▋</span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            <div className="p-2.5 shrink-0">
-              <div className="flex items-center gap-2">
-                <input
-                  value={followUpInput}
-                  onChange={(e) => setFollowUpInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      void sendFollowUp();
-                    }
-                  }}
-                  placeholder={
-                    followUpMessages.length === 0 ? '输入问题，基于这些结果继续追问…' : '继续追问…'
-                  }
-                  disabled={isFollowUpLoading}
-                  className="flex-1 min-w-0 bg-white/70 dark:bg-gray-900/70 border border-white/60 dark:border-gray-700 rounded-full px-4 py-2.5 text-sm text-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 outline-none focus:border-blue-300 disabled:opacity-60"
-                />
-                {isFollowUpLoading ? (
-                  <button
-                    onClick={stopFollowUp}
-                    className="shrink-0 px-4 py-2.5 rounded-full bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-300 text-sm"
-                  >
-                    停止
-                  </button>
-                ) : (
-                  <button
-                    onClick={() => void sendFollowUp()}
-                    disabled={!followUpInput.trim()}
-                    className={`shrink-0 px-4 py-2.5 rounded-full text-sm transition-colors ${
-                      followUpInput.trim()
-                        ? 'bg-gray-800 dark:bg-gray-100 text-white dark:text-gray-900'
-                        : 'bg-white/50 dark:bg-gray-800/60 text-gray-400 dark:text-gray-500 cursor-not-allowed'
-                    }`}
-                  >
-                    发送
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
-        )
       )}
 
       <style>{`
