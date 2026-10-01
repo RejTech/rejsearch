@@ -328,7 +328,7 @@ export function HotSearchExpert({ showGLM = true, variant = 'desktop' }: HotSear
   if (topic) {
     const isWap = variant === 'wap';
     return (
-      <div className="w-full">
+      <div className={`w-full ${isWap ? 'pt-[calc(env(safe-area-inset-top)+4.5rem)]' : ''}`}>
         {/* WAP：返回按钮悬浮于左上角，平台原页悬浮于右上角（与返回同款胶囊） */}
         {isWap && (
           <button
@@ -696,7 +696,7 @@ export function HotSearchExpert({ showGLM = true, variant = 'desktop' }: HotSear
                     return data && data.success && data.list.length > 0;
                   });
                   return (
-                    <div className="flex min-h-[calc(100dvh-15rem)] flex-col justify-center pt-24">
+                    <div className="flex min-h-[calc(100dvh-15rem)] flex-col justify-center pt-[calc(env(safe-area-inset-top)+5.5rem)]">
                       {availablePlatforms.length === 0 ? (
                         <p className="text-center text-sm text-gray-400 dark:text-gray-500">
                           本期暂无可用榜单
