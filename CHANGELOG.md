@@ -2,6 +2,22 @@
 
 本文档详细记录了项目近期的核心功能迭代与技术优化。
 
+## v6（α.26.1001.20）
+
+### ✨ 新功能 (Features)
+
+#### 1. 音效反馈
+- WAP 底栏切换模式播放 **bencho-lift** 音效（点击当前已选模式不响）；AI 自搜回答与结果页追问回答**正常完成**时播放 **bencho-perk**（用户主动停止、超时、失败不响）。
+- 新增 [sound.ts]：复用 `Audio` 实例、连续触发重头播放、自动播放受限/解码异常一律静默，不影响主流程。音频源文件位于 `src/assets/sounds/`。
+
+#### 2. 热搜「选择时间」面板新增 GitHub Actions 状态徽章
+- 实时显示数据仓库 RejHotSearchDB 抓取工作流（fetch-hot-search.yml）最近一次运行：绿点「抓取成功」/红点「抓取失败」/黄色脉冲「正在抓取」/灰点「状态未知」+ 相对时间，点击跳转对应 Actions 运行页。
+- 新增同源代理 `/api/gh-actions`（Vite + Netlify `_redirects`）→ `api.github.com`，浏览器不直连 GitHub；状态 60 秒进程内缓存，网络失败降级为「状态未知」不阻断界面；新增 [ghactions.ts] 与 [ActionStatusBadge.tsx]。
+
+### 🎨 优化 (Polish)
+- 移除桌面「AI 自搜」模式名后的 BETA 标签。
+- WAP 追问栏消息区上下边缘渐隐（`scroll-fade-y` mask），修复长回答溢出面板问题（flex + min-h-0 约束链）；收起按钮独占一栏且与消息区间距加大。
+
 ## v6（α.26.1001.19）
 
 ### ✨ 变更 (Changes)

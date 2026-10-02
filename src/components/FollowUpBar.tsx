@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { SearchResult } from '../lib/anysearch';
 import { chatWithSearchStream } from '../lib/glm';
+import { playPerk } from '../lib/sound';
 import { MarkdownWithBadges } from './SearchResults';
 
 export interface FollowUpResultGroup {
@@ -51,6 +52,8 @@ export function useFollowUp(query: string, groups: FollowUpResultGroup[]) {
           return next;
         });
       });
+      // 追问回答正常完成：播放 perk 提示音
+      playPerk();
     } catch {
       setMessages((prev) => {
         const next = [...prev];

@@ -3,6 +3,7 @@ import { useSearchStore } from '../store/searchStore';
 import { search } from '../lib/anysearch';
 import { summarizeOverview, summarizePlatformBrief } from '../lib/glm';
 import { SearchResults } from './SearchResults';
+import { ActionStatusBadge } from './ActionStatusBadge';
 import {
   PLATFORM_META,
   HOTSEARCH_NODES,
@@ -516,6 +517,11 @@ export function HotSearchExpert({ showGLM = true, variant = 'desktop' }: HotSear
                       ) : (
                         <p className="px-2 text-xs text-gray-400">当日仅有一个归档时间点</p>
                       )}
+                    </div>
+                    {/* GitHub Actions 数据抓取任务实时状态 */}
+                    <div>
+                      <p className="mb-1 px-2 text-[10px] text-gray-400 dark:text-gray-500">数据更新</p>
+                      <ActionStatusBadge />
                     </div>
                     <button
                       onClick={() => {

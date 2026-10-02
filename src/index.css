@@ -150,19 +150,19 @@ html.dark ::-webkit-scrollbar-thumb:hover {
 
 /* LiquidGlass：高斯模糊毛玻璃 + 细描边 + 顶部内高光（WAP 底栏/顶栏） */
 .liquid-glass {
-  background: rgba(255, 255, 255, 0.62);
-  -webkit-backdrop-filter: blur(24px) saturate(180%);
-  backdrop-filter: blur(24px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.38);
+  -webkit-backdrop-filter: blur(10px) saturate(160%);
+  backdrop-filter: blur(10px) saturate(160%);
+  border: 1px solid rgba(255, 255, 255, 0.55);
   box-shadow:
-    0 8px 32px rgba(17, 24, 39, 0.10),
-    inset 0 1px 0 rgba(255, 255, 255, 0.85);
+    0 8px 32px rgba(17, 24, 39, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.7);
 }
 
 html.dark .liquid-glass {
-  background: rgba(17, 24, 39, 0.62);
-  border-color: rgba(255, 255, 255, 0.12);
+  background: rgba(17, 24, 39, 0.38);
+  border-color: rgba(255, 255, 255, 0.1);
   box-shadow:
-    0 8px 32px rgba(0, 0, 0, 0.45),
-    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    0 8px 32px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }

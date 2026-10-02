@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { search, SearchResult } from '../lib/anysearch';
 import { extractSearchQueries, chatWithSearchStream } from '../lib/glm';
+import { playPerk } from '../lib/sound';
 import { MarkdownWithBadges } from './SearchResults';
 import { Watermark } from './Watermark';
 
@@ -226,6 +227,9 @@ export function ChatMode({
       // 兜底：若从未收到 chunk，也要把"生成回复中"标记为 done
       if (!firstChunkReceived) {
         markGeneratingDone();
+      } else if (!abortRef.current && !timedOut) {
+        // 正常回答完成（未停止/未超时）：播放 perk 提示音
+        playPerk();
       }
     } catch (err) {
       // 异常兜底

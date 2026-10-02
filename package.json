@@ -1,7 +1,7 @@
 {
   "name": "rejsearch",
   "private": true,
-  "version": "α.26.1001.19",
+  "version": "α.26.1001.20",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -13,6 +13,7 @@
   "dependencies": {
     "@tailwindcss/vite": "^4.3.2",
     "clsx": "^2.1.1",
+    "liquid-gooey": "^0.2.2",
     "lucide-react": "^0.511.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",

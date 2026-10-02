@@ -3,6 +3,7 @@ import { SearchBar } from '../components/SearchBar';
 import { SearchResults } from '../components/SearchResults';
 import { ChatMode } from '../components/ChatMode';
 import { HotSearchExpert } from '../components/HotSearchExpert';
+import { playLift } from '../lib/sound';
 
 type WapMode = 'search' | 'chat' | 'hot';
 
@@ -20,14 +21,15 @@ const MODES: { key: WapMode; label: string }[] = [
 export default function Wap() {
   const [mode, setMode] = useState<WapMode>('search');
 
+  // 切换模式：播放 lift 音效（点击当前已选模式不响）
+  const switchMode = (next: WapMode) => {
+    if (next === mode) return;
+    playLift();
+    setMode(next);
+  };
+
   return (
     <div className="relative min-h-[100dvh] overflow-x-hidden bg-white transition-colors dark:bg-gray-900">
-      {/* 环境光斑：为毛玻璃提供可折射的背景层次 */}
-      <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-72 overflow-hidden">
-        <div className="absolute -left-16 -top-24 h-56 w-56 rounded-full bg-gray-200/60 blur-3xl dark:bg-gray-700/40" />
-        <div className="absolute -top-10 right-0 h-48 w-48 rounded-full bg-gray-100/80 blur-3xl dark:bg-gray-800/60" />
-      </div>
-
       {/* 内容区（三个模式复用原有组件，详情均为移动端弹窗形态） */}
       <main className="relative px-3 pt-4 pb-36">
         {mode === 'search' && (
@@ -54,7 +56,7 @@ export default function Wap() {
           {MODES.map((m) => (
             <button
               key={m.key}
-              onClick={() => setMode(m.key)}
+              onClick={() => switchMode(m.key)}
               className={`relative z-10 flex-1 rounded-full py-2.5 text-center text-sm font-medium transition-colors ${
                 mode === m.key
                   ? 'text-gray-900 dark:text-white'

@@ -46,6 +46,12 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api\/hotsearch-gcore/, ''),
       },
+      // GitHub Actions 运行状态（api.github.com）
+      '/api/gh-actions': {
+        target: 'https://api.github.com/repos/RejTech/RejHotSearchDB/actions',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/gh-actions/, ''),
+      },
     },
   },
 })
