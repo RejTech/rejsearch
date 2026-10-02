@@ -185,6 +185,20 @@ export function HotSearchExpert({ showGLM = true, variant = 'desktop' }: HotSear
     }
   }, [loadArchive]);
 
+  /** 下载已加载的 JSON 数据到本地（不额外发请求） */
+  const downloadJson = (data: unknown, filename: string) => {
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    // 延迟释放：部分浏览器要求导航（下载）完成后再 revoke，过早释放可能取消下载
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+  };
+
   /** 强制重新测速，随后用新的最快节点重新拉取索引 */
   const handleSpeedTest = () => {
     if (speedTesting) return;
@@ -563,6 +577,23 @@ export function HotSearchExpert({ showGLM = true, variant = 'desktop' }: HotSear
                     >
                       刷新数据
                     </button>
+                    {/* 下载原始 JSON：索引 / 当前选中日期时间点的归档 */}
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        onClick={() => indexRef.current && downloadJson(indexRef.current, 'index.json')}
+                        disabled={indexLoading || !indexRef.current}
+                        className="rounded-full border border-gray-200/70 dark:border-gray-700 bg-white/70 dark:bg-gray-900/60 px-3 py-2 text-xs text-gray-600 dark:text-gray-300 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        下载索引
+                      </button>
+                      <button
+                        onClick={() => archive && downloadJson(archive, `hotsearch-${date}-${time}.json`)}
+                        disabled={archiveLoading || !archive}
+                        className="rounded-full border border-gray-200/70 dark:border-gray-700 bg-white/70 dark:bg-gray-900/60 px-3 py-2 text-xs text-gray-600 dark:text-gray-300 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        下载本期
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>
@@ -635,6 +666,23 @@ export function HotSearchExpert({ showGLM = true, variant = 'desktop' }: HotSear
               className="px-4 py-1.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 text-sm rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-60 transition-colors"
             >
               刷新
+            </button>
+            {/* GitHub Actions 数据抓取实时状态（紧凑徽章，点击跳转运行页） */}
+            <ActionStatusBadge variant="inline" />
+            {/* 下载原始 JSON：索引 / 当前日期时间点归档 */}
+            <button
+              onClick={() => indexRef.current && downloadJson(indexRef.current, 'index.json')}
+              disabled={indexLoading || !indexRef.current}
+              className="px-4 py-1.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 text-sm rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-60 transition-colors"
+            >
+              下载索引
+            </button>
+            <button
+              onClick={() => archive && downloadJson(archive, `hotsearch-${date}-${time}.json`)}
+              disabled={archiveLoading || !archive}
+              className="px-4 py-1.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 text-sm rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-60 transition-colors"
+            >
+              下载本期
             </button>
           </div>
           <p className="text-center text-xs text-gray-400 dark:text-gray-500 mb-6">

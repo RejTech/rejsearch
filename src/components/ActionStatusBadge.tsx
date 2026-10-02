@@ -14,11 +14,20 @@ const DOT_CLASS: Record<ActionRunState, string> = {
   unknown: 'bg-gray-400',
 };
 
+function stateTextClass(state: ActionRunState) {
+  if (state === 'success') return 'text-green-600 dark:text-green-400';
+  if (state === 'failure') return 'text-red-600 dark:text-red-400';
+  if (state === 'running') return 'text-amber-600 dark:text-amber-400';
+  return 'text-gray-500 dark:text-gray-400';
+}
+
 /**
- * GitHub Actions 数据抓取任务状态徽章（热搜「选择时间」面板内）。
- * 面板每次展开都会重新挂载，自动拉取最近一次运行（库内 60s 缓存）。
+ * GitHub Actions 数据抓取任务状态徽章。
+ * - panel：WAP「选择时间」面板内的整行胶囊（左标签 + 右状态）
+ * - inline：桌面热搜控制区内与其他控件同排的紧凑胶囊
+ * 挂载即拉取最近一次运行（库内 60s 缓存）。
  */
-export function ActionStatusBadge() {
+export function ActionStatusBadge({ variant = 'panel' }: { variant?: 'panel' | 'inline' }) {
   const [status, setStatus] = useState<ActionRunStatus | null>(null);
 
   useEffect(() => {
@@ -30,6 +39,33 @@ export function ActionStatusBadge() {
       alive = false;
     };
   }, []);
+
+  if (variant === 'inline') {
+    return (
+      <a
+        href={status?.url ?? '#'}
+        target="_blank"
+        rel="noopener noreferrer"
+        title="在 GitHub 查看 Actions 运行详情"
+        className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border border-gray-200 bg-gray-50 px-3 py-1.5 text-xs text-gray-500 transition-colors hover:bg-gray-100 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700"
+      >
+        {status ? (
+          <>
+            <span className={`h-2 w-2 shrink-0 rounded-full ${DOT_CLASS[status.state]}`} />
+            <span className={stateTextClass(status.state)}>{status.label}</span>
+            {status.at != null && (
+              <span className="text-gray-400 dark:text-gray-500">{formatRelativeTime(status.at)}</span>
+            )}
+          </>
+        ) : (
+          <>
+            <span className="h-2 w-2 shrink-0 rounded-full bg-gray-300 dark:bg-gray-600" />
+            状态获取中…
+          </>
+        )}
+      </a>
+    );
+  }
 
   return (
     <a
@@ -43,19 +79,7 @@ export function ActionStatusBadge() {
       {status ? (
         <span className="ml-auto flex shrink-0 items-center gap-1.5 text-gray-500 dark:text-gray-400">
           <span className={`h-2 w-2 rounded-full ${DOT_CLASS[status.state]}`} />
-          <span
-            className={
-              status.state === 'success'
-                ? 'text-green-600 dark:text-green-400'
-                : status.state === 'failure'
-                  ? 'text-red-600 dark:text-red-400'
-                  : status.state === 'running'
-                    ? 'text-amber-600 dark:text-amber-400'
-                    : ''
-            }
-          >
-            {status.label}
-          </span>
+          <span className={stateTextClass(status.state)}>{status.label}</span>
           {status.at != null && <span className="text-gray-400 dark:text-gray-500">· {formatRelativeTime(status.at)}</span>}
         </span>
       ) : (

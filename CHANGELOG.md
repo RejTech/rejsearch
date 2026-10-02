@@ -14,7 +14,11 @@
 - 实时显示数据仓库 RejHotSearchDB 抓取工作流（fetch-hot-search.yml）最近一次运行：绿点「抓取成功」/红点「抓取失败」/黄色脉冲「正在抓取」/灰点「状态未知」+ 相对时间，点击跳转对应 Actions 运行页。
 - 新增同源代理 `/api/gh-actions`（Vite + Netlify `_redirects`）→ `api.github.com`，浏览器不直连 GitHub；状态 60 秒进程内缓存，网络失败降级为「状态未知」不阻断界面；新增 [ghactions.ts] 与 [ActionStatusBadge.tsx]。
 
+#### 3. 热搜「高级选项」支持下载原始 JSON
+- 「高级选项」面板新增「下载索引」（index.json）与「下载本期」（hotsearch-{date}-{time}.json）两个胶囊按钮，导出当前已加载数据（缩进格式化，不额外发请求），数据未就绪时按钮置灰。
+
 ### 🎨 优化 (Polish)
+- 玻璃效果更通透：`.liquid-glass` 模糊 24px → 10px、底色 alpha 0.62 → 0.38（浅/深双主题），饱和度与描边同步收敛；删除 WAP 页面顶部两个环境光晕。
 - 移除桌面「AI 自搜」模式名后的 BETA 标签。
 - WAP 追问栏消息区上下边缘渐隐（`scroll-fade-y` mask），修复长回答溢出面板问题（flex + min-h-0 约束链）；收起按钮独占一栏且与消息区间距加大。
 
