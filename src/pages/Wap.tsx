@@ -5,6 +5,8 @@ import { ChatMode } from '../components/ChatMode';
 import { HotSearchExpert } from '../components/HotSearchExpert';
 import { playLift } from '../lib/sound';
 import { isEmbedApp } from '../lib/utils';
+// 安卓安装包直链（Vite 会将文件产出为带哈希的静态资源 URL，开发/生产均可用）
+import latestApkUrl from '../assets/apks/latest.apk?url';
 
 type WapMode = 'search' | 'chat' | 'hot';
 
@@ -88,9 +90,8 @@ export default function Wap() {
             {!embed && (
               <div className="mx-auto mt-4 w-full max-w-3xl px-4 sm:px-6">
                 <a
-                  href="https://pan.quark.cn/s/442024c98fac"
-                  target="_blank"
-                  rel="noopener noreferrer"
+                  href={latestApkUrl}
+                  download="RemoSearch-latest.apk"
                   className="liquid-glass flex items-center justify-between gap-3 rounded-2xl px-4 py-3 transition-colors hover:bg-white/70 dark:hover:bg-gray-700/50"
                 >
                   <div className="min-w-0">
