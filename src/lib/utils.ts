@@ -10,7 +10,8 @@ const EMBED_APP_UA = /RWACore/i;
 
 /** 当前是否运行在内嵌宿主 App 中 */
 export function isEmbedApp(): boolean {
-  return EMBED_APP_UA.test(navigator.userAgent);
+  // TEMP-EMBED-TEST: 验证内嵌安全区归零，验证后必须立即改回
+  return true;
 }
 
 /**

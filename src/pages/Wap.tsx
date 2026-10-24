@@ -66,12 +66,19 @@ export default function Wap() {
     <div
       className="relative min-h-[100dvh] overflow-x-hidden bg-white transition-colors dark:bg-gray-900"
       // 内嵌隐藏底栏时把底栏占位归零，ChatMode/追问栏等置底组件自动贴底
-      style={{ '--wap-nav-h': embed ? '0rem' : '4.5rem' } as CSSProperties}
+      // 内嵌宿主已处理系统安全区：安全区变量一并归零，内容自动置顶/贴底
+      style={
+        {
+          '--wap-nav-h': embed ? '0rem' : '4.5rem',
+          '--wap-safe-top': embed ? '0px' : 'env(safe-area-inset-top)',
+          '--wap-safe-bottom': embed ? '0px' : 'env(safe-area-inset-bottom)',
+        } as CSSProperties
+      }
     >
       {/* 内容区（三个模式复用原有组件，详情均为移动端弹窗形态） */}
       <main
         className={`relative px-3 pt-4 ${
-          embed ? 'pb-[calc(1rem+env(safe-area-inset-bottom))]' : 'pb-36'
+          embed ? 'pb-[calc(1rem+var(--wap-safe-bottom,env(safe-area-inset-bottom)))]' : 'pb-36'
         }`}
       >
         {mode === 'search' && (
@@ -86,7 +93,7 @@ export default function Wap() {
 
       {/* 底部悬浮 LiquidGlass 标签栏（内嵌 App 由宿主 UI 接管，不渲染） */}
       {!embed && (
-        <nav className="fixed inset-x-0 bottom-0 z-40 px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+        <nav className="fixed inset-x-0 bottom-0 z-40 px-4 pb-[max(0.75rem,var(--wap-safe-bottom,env(safe-area-inset-bottom)))]">
           <div className="liquid-glass relative mx-auto flex max-w-md rounded-full p-1">
             {/* 滑动高亮药丸 */}
             <div

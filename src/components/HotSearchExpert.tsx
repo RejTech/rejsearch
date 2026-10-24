@@ -343,12 +343,12 @@ export function HotSearchExpert({ showGLM = true, variant = 'desktop' }: HotSear
   if (topic) {
     const isWap = variant === 'wap';
     return (
-      <div className={`w-full ${isWap ? 'pt-[calc(env(safe-area-inset-top)+4.5rem)]' : ''}`}>
+      <div className={`w-full ${isWap ? 'pt-[calc(var(--wap-safe-top,env(safe-area-inset-top))+4.5rem)]' : ''}`}>
         {/* WAP：返回按钮悬浮于左上角，平台原页悬浮于右上角（与返回同款胶囊） */}
         {isWap && (
           <button
             onClick={backToList}
-            className="liquid-glass fixed left-3 top-[max(0.75rem,env(safe-area-inset-top))] z-40 rounded-full px-3.5 py-2 text-xs font-medium text-gray-700 dark:text-gray-200"
+            className="liquid-glass fixed left-3 top-[max(0.75rem,var(--wap-safe-top,env(safe-area-inset-top)))] z-40 rounded-full px-3.5 py-2 text-xs font-medium text-gray-700 dark:text-gray-200"
           >
             ‹ 返回热搜榜
           </button>
@@ -358,7 +358,7 @@ export function HotSearchExpert({ showGLM = true, variant = 'desktop' }: HotSear
             href={topic.item.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="liquid-glass fixed right-3 top-[max(0.75rem,env(safe-area-inset-top))] z-40 rounded-full px-3.5 py-2 text-xs font-medium text-blue-600 dark:text-blue-300"
+            className="liquid-glass fixed right-3 top-[max(0.75rem,var(--wap-safe-top,env(safe-area-inset-top)))] z-40 rounded-full px-3.5 py-2 text-xs font-medium text-blue-600 dark:text-blue-300"
           >
             平台原页 ↗
           </a>
@@ -464,7 +464,7 @@ export function HotSearchExpert({ showGLM = true, variant = 'desktop' }: HotSear
       {/* WAP：顶部悬浮按钮组 + 下拉面板（收纳日期/时间点/刷新 与 节点/测速） */}
       {isWapList && (
         <>
-          <div className="fixed left-3 top-[max(0.75rem,env(safe-area-inset-top))] z-40 flex items-center gap-2">
+          <div className="fixed left-3 top-[max(0.75rem,var(--wap-safe-top,env(safe-area-inset-top)))] z-40 flex items-center gap-2">
             {(
               [
                 { key: 'time', label: '选择时间' },
@@ -489,7 +489,7 @@ export function HotSearchExpert({ showGLM = true, variant = 'desktop' }: HotSear
               {/* 透明遮罩：点击面板外任意处收起 */}
               <div className="fixed inset-0 z-40" onClick={() => setWapPanel(null)} />
               {/* 同心圆：容器圆角 32px = 内边距 12px + 内层胶囊圆角 20px，面板圆弧与内部胶囊共用圆心 */}
-              <div className="liquid-glass animate-panel-in fixed left-3 right-3 top-[calc(max(0.75rem,env(safe-area-inset-top))+2.75rem)] z-50 mx-auto max-w-sm rounded-[32px] p-3">
+              <div className="liquid-glass animate-panel-in fixed left-3 right-3 top-[calc(max(0.75rem,var(--wap-safe-top,env(safe-area-inset-top)))+2.75rem)] z-50 mx-auto max-w-sm rounded-[32px] p-3">
                 {wapPanel === 'time' ? (
                   <div className="space-y-3">
                     <div>
@@ -750,7 +750,7 @@ export function HotSearchExpert({ showGLM = true, variant = 'desktop' }: HotSear
                     return data && data.success && data.list.length > 0;
                   });
                   return (
-                    <div className="flex min-h-[calc(100dvh-15rem)] flex-col justify-center pt-[calc(env(safe-area-inset-top)+5.5rem)]">
+                    <div className="flex min-h-[calc(100dvh-15rem)] flex-col justify-center pt-[calc(var(--wap-safe-top,env(safe-area-inset-top))+5.5rem)]">
                       {availablePlatforms.length === 0 ? (
                         <p className="text-center text-sm text-gray-400 dark:text-gray-500">
                           本期暂无可用榜单
@@ -869,7 +869,7 @@ export function HotSearchExpert({ showGLM = true, variant = 'desktop' }: HotSear
                   关闭
                 </button>
               </div>
-              <ul className="flex-1 overflow-y-auto px-2 py-1 pb-[max(1rem,env(safe-area-inset-bottom))]">
+              <ul className="flex-1 overflow-y-auto px-2 py-1 pb-[max(1rem,var(--wap-safe-bottom,env(safe-area-inset-bottom)))]">
                 {data.list.map((item) => (
                   <li key={`${item.rank}-${item.title}`}>{renderHotItem(item, sheetPlatform, meta.name)}</li>
                 ))}

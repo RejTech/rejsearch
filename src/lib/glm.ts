@@ -338,44 +338,148 @@ ${titles.map((t, i) => `${i + 1}. ${t.slice(0, 40)}`).join('\n')}
   return clean;
 }
 
+// ===== AI 自搜关键词的相关性护栏 =====
+// 通用检索词：单独出现时不携带任何实体信息。
+// 典型故障：用户问「小米 YU7 这款产品怎么样」，提取结果退化成只搜「产品」。
+const GENERIC_TERMS = [
+  '值得买吗', '值得买', '好不好', '哪个好', '怎么样', '用户反馈', '使用体验', '使用方法',
+  '推荐一下', '介绍一下', '具体参数', '优缺点', '区别对比',
+  '产品', '商品', '东西', '品牌', '评测', '测评', '评估', '推荐', '选购', '购买',
+  '价格', '报价', '多少钱', '售价', '优点', '缺点', '参数', '规格', '配置', '性能',
+  '功能', '体验', '口碑', '评价', '评论', '如何', '是什么', '为什么', '区别', '对比',
+  '排名', '榜单', '最新', '资讯', '新闻', '介绍', '科普', '教程', '有哪些', '大全',
+  '汇总', '趋势', '前景',
+];
+
+// 问句里的语气词前缀，作为兜底检索词时剥离
+const PLEASANTRY_PREFIXES = [
+  '请问', '麻烦', '帮忙', '帮我', '我想知道', '想知道', '想了解', '了解一下', '介绍一下',
+  '告诉我', '能否', '可以', '请',
+];
+
+/** 归一化：去掉标点与空白、英文转小写，仅保留中英文与数字 */
+function normalizeQueryText(text: string): string {
+  return text.toLowerCase().replace(/[^a-z0-9\u4e00-\u9fa5]/g, '');
+}
+
+/** 去除通用词（长词优先，避免「值得买」被短词拆碎），保留实体片段 */
+function stripGenericTerms(text: string): string {
+  let s = text.toLowerCase();
+  for (const term of [...GENERIC_TERMS].sort((a, b) => b.length - a.length)) {
+    s = s.split(term).join(' ');
+  }
+  return s;
+}
+
+/** 关键词是否只是通用词：去掉通用词后剩余有效字符不足 2 个即不含实体 */
+function isGenericOnly(query: string): boolean {
+  return normalizeQueryText(stripGenericTerms(query)).length < 2;
+}
+
+/** 关键词是否仍锚定原问题：英文/型号 token 或 ≥2 字中文片段命中原问题 */
+function sharesEntityWithSource(query: string, source: string): boolean {
+  const q = normalizeQueryText(stripGenericTerms(query));
+  const s = normalizeQueryText(source);
+  if (q.length < 2) return false;
+  const latinTokens = q.match(/[a-z0-9]{2,}/g) ?? [];
+  if (latinTokens.some((t) => s.includes(t))) return true;
+  const cjkChunks = q.match(/[\u4e00-\u9fa5]{2,}/g) ?? [];
+  return cjkChunks.some((c) => s.includes(c));
+}
+
+/** 清理原问题：去语气词与尾部标点，作为兜底检索词 */
+function cleanUserQuery(text: string): string {
+  let s = text.trim();
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (const p of PLEASANTRY_PREFIXES) {
+      if (s.startsWith(p)) {
+        s = s.slice(p.length).trim();
+        changed = true;
+        break;
+      }
+    }
+  }
+  return s.replace(/[?？!！。.,，、;；:：\s]+$/g, '').slice(0, 60);
+}
+
 /**
  * AI 自搜模式：从用户自然语言消息中提取搜索关键词（可多个）。
- * 返回 1-3 个关键词，按优先级排序。
+ * 返回 1-3 个关键词，按优先级排序；每条都必须保留原问题中的核心实体，
+ * 只含通用词（如「产品」「评测」）的关键词会被丢弃并回退到原问题。
  */
 export async function extractSearchQueries(userMessage: string): Promise<string[]> {
-  if (!userMessage.trim()) return [];
+  const trimmed = userMessage.trim();
+  if (!trimmed) return [];
 
-  const prompt = `你是搜索关键词提取助手。根据用户的问题或需求，提取最适合用于搜索引擎检索的关键词。
+  const prompt = `你是搜索关键词提取助手。根据用户的问题，提取最适合用于搜索引擎检索的关键词。
+
+最关键的规则：**每条关键词都必须原样保留用户问题中的核心实体**——品牌、产品/型号、人名、机构、作品、地名、技术名等。绝不能把实体删掉换成通用词。
+反例（禁止）：用户问「小米 YU7 这款产品值得买吗」，却输出「产品」或「产品评测」——这丢掉了实体，搜索结果会完全跑偏。
 
 规则：
-1. 返回 1-3 个关键词，按重要性排序
-2. 关键词应当精炼（去掉"请问"、"帮我"等语气词）
-3. 每个关键词是独立的搜索查询，能覆盖用户需求的不同方面
-4. 若用户问题只涉及单一主题，只返回 1 个关键词
-5. 严格只输出 JSON 数组，不要有任何额外文字
+1. 返回 1-3 条关键词，按重要性排序；每条都是可直接提交给搜索引擎的独立查询
+2. 每条都必须包含原问题中的实体（专有名词/型号/人名等），不得替换、泛指或省略
+3. 严禁输出只由通用词构成的关键词（如「产品」「评测」「推荐」「价格」「怎么样」「优缺点」）；通用词只能与实体组合出现
+4. 去掉「请问」「帮我」「介绍一下」等语气词与疑问句式
+5. 可在同一实体上补充不同侧面（如评测、价格、对比），但不要引入与原问题无关的主题
+6. 若问题只涉及单一主题，只返回 1 条
+7. 严格只输出 JSON 数组，不要任何额外文字
 
-用户消息：${userMessage}
+示例：
+输入：小米 YU7 这款产品值得买吗
+输出：["小米 YU7 评测", "小米 YU7 价格", "小米 YU7 优缺点"]
 
-请输出 JSON 数组，如 ["关键词1", "关键词2"]：`;
+输入：帮我介绍一下 Notion
+输出：["Notion 介绍"]
+
+输入：2026 年诺贝尔物理学奖颁给了谁
+输出：["2026年诺贝尔物理学奖"]
+
+用户消息：${trimmed}
+
+请输出 JSON 数组：`;
 
   const raw = await callGLM(
-    '你是搜索关键词提取助手，擅长从自然语言中提炼搜索查询。',
+    '你是搜索关键词提取助手。你的第一原则是保留用户问题中的专有名词与核心实体，绝不把实体替换成「产品」「评测」这类通用词。',
     prompt,
     200,
   );
 
-  // 提取 JSON 数组
+  // 兜底：清掉语气词后的原问题（保证至少有一次搜索紧扣用户问题）
+  const fallback = [cleanUserQuery(trimmed) || trimmed];
+
   const match = raw.match(/\[[\s\S]*\]/);
-  if (!match) return [userMessage.trim()];
+  if (!match) return fallback;
+
   try {
     const arr = JSON.parse(match[0]);
-    if (Array.isArray(arr) && arr.length > 0) {
-      return arr.filter((s) => typeof s === 'string' && s.trim()).map((s) => s.trim()).slice(0, 3);
+    if (!Array.isArray(arr)) return fallback;
+
+    const candidates = arr
+      .filter((s): s is string => typeof s === 'string' && !!s.trim())
+      .map((s) => s.trim().replace(/\s+/g, ' '))
+      .slice(0, 6);
+
+    // 相关性护栏：丢弃「只有通用词」与「未保留原问题实体」的关键词
+    const kept: string[] = [];
+    const seen = new Set<string>();
+    for (const q of candidates) {
+      const key = normalizeQueryText(q);
+      if (!key || seen.has(key)) continue;
+      if (isGenericOnly(q)) continue;
+      if (!sharesEntityWithSource(q, trimmed)) continue;
+      seen.add(key);
+      kept.push(q);
+      if (kept.length >= 3) break;
     }
+
+    return kept.length > 0 ? kept : fallback;
   } catch {
     // 解析失败回退
+    return fallback;
   }
-  return [userMessage.trim()];
 }
 
 /**

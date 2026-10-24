@@ -416,7 +416,7 @@ export function ChatMode({
           </div>
         )}
 
-        <div className="space-y-3 pb-[calc(var(--wap-nav-h,4.5rem)+env(safe-area-inset-bottom)+4.25rem)]">
+        <div className="space-y-3 pb-[calc(var(--wap-nav-h,4.5rem)+var(--wap-safe-bottom,env(safe-area-inset-bottom))+4.25rem)]">
           {messages.length === 0 && (
             <div className="py-16 text-center">
               <p className="mb-2 text-sm text-gray-400 dark:text-gray-500">
@@ -447,7 +447,7 @@ export function ChatMode({
         </div>
 
         {/* 置底输入药丸：与底部标签栏同构（liquid-glass 胶囊 + 透明输入 + 深色胶囊按钮） */}
-        <div className="fixed inset-x-3 bottom-[calc(max(0.75rem,env(safe-area-inset-bottom))+var(--wap-nav-h,4.5rem))] z-40">
+        <div className="fixed inset-x-3 bottom-[calc(max(0.75rem,var(--wap-safe-bottom,env(safe-area-inset-bottom)))+var(--wap-nav-h,4.5rem))] z-40">
           <div className="liquid-glass flex items-center gap-1 rounded-full p-1">
             <input
               ref={inputRef as unknown as React.RefObject<HTMLInputElement>}
