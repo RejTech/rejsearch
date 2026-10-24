@@ -1,11 +1,12 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchStore } from '../store/searchStore';
 import { search } from '../lib/anysearch';
-import { summarizeOverview, summarizePlatformBrief } from '../lib/glm';
+import { categorizeHotSearch, summarizeOverview, summarizePlatformBrief, type HotSearchCategory, type HotSearchCategoryEntry } from '../lib/glm';
 import { SearchResults } from './SearchResults';
 import { ActionStatusBadge } from './ActionStatusBadge';
 import {
   PLATFORM_META,
+  PLATFORM_ID_PREFIX,
   HOTSEARCH_NODES,
   getNodeRanking,
   formatLatency,
@@ -38,6 +39,24 @@ interface SelectedTopic {
 }
 
 const PREVIEW_COUNT = 10;
+/** 分类板块内默认展示的词条数，超出显示「展开全部」按钮（防止超大板块撑爆页面） */
+const CATEGORY_PREVIEW_COUNT = 15;
+/** 每平台送入分类模型的词条上限：约束提示词规模与生成耗时，完整榜单始终在「详细热搜情况」可查 */
+const CATEGORY_INPUT_LIMIT = 25;
+
+/** 由归档构建分类模型输入（仅抓取成功且非空的平台，词条 ID = 平台前缀 + 平台内排名） */
+function buildCategoryEntries(archive: HotSearchArchive): HotSearchCategoryEntry[] {
+  const entries: HotSearchCategoryEntry[] = [];
+  for (const { key, name } of PLATFORM_META) {
+    const data = archive.platforms[key];
+    if (!data || !data.success || data.list.length === 0) continue;
+    const prefix = PLATFORM_ID_PREFIX[key];
+    for (const item of data.list.slice(0, CATEGORY_INPUT_LIMIT)) {
+      entries.push({ id: `${prefix}${item.rank}`, platform: name, title: item.title });
+    }
+  }
+  return entries;
+}
 
 export function HotSearchExpert({ showGLM = true, variant = 'desktop' }: HotSearchExpertProps = {}) {
   const {
@@ -81,6 +100,33 @@ export function HotSearchExpert({ showGLM = true, variant = 'desktop' }: HotSear
   /** WAP 榜单视图：当前展开的顶部悬浮面板（null=全部收起） */
   const [wapPanel, setWapPanel] = useState<'time' | 'advanced' | null>(null);
 
+  // AI 分类板块（全平台热搜语义归类，双端一致）
+  const [categories, setCategories] = useState<HotSearchCategory[] | null>(null);
+  const [categoriesLoading, setCategoriesLoading] = useState(false);
+  const [categoriesFailed, setCategoriesFailed] = useState(false);
+  /** 各分类板块独立展开/收起（生成后默认全部收起，点击板块头部展开） */
+  const [expandedCategories, setExpandedCategories] = useState<Set<number>>(new Set());
+  /** 板块内词条超出 CATEGORY_PREVIEW_COUNT 时的「展开全部」状态 */
+  const [categoryShowAll, setCategoryShowAll] = useState<Set<number>>(new Set());
+  /** 「详细热搜情况」胶囊：原始平台榜单默认折叠，点击展开 */
+  const [detailExpanded, setDetailExpanded] = useState(false);
+
+  /** 词条 ID → 平台与条目（分类板块渲染与点击进入工作流用） */
+  const itemLookup = useMemo(() => {
+    const map = new Map<string, { platform: HotSearchPlatform; name: string; short: string; item: HotSearchItem }>();
+    if (!archive) return map;
+    for (const { key, name, short } of PLATFORM_META) {
+      const data = archive.platforms[key];
+      if (!data || !data.success) continue;
+      const prefix = PLATFORM_ID_PREFIX[key];
+      for (const item of data.list) {
+        const id = `${prefix}${item.rank}`;
+        if (!map.has(id)) map.set(id, { platform: key, name, short, item });
+      }
+    }
+    return map;
+  }, [archive]);
+
   // WAP 形态：榜单就绪后为各平台折叠卡异步生成 AI 一句话概览（GLM-4-Flash，同榜缓存只调一次）
   useEffect(() => {
     if (variant !== 'wap' || !archive) return;
@@ -103,6 +149,47 @@ export function HotSearchExpert({ showGLM = true, variant = 'desktop' }: HotSear
       cancelled = true;
     };
   }, [archive, variant]);
+
+  /** 当前生效的分类缓存键：归档切换后作废旧一次生成的回写（快速切日期不串榜） */
+  const categoryKeyRef = useRef('');
+
+  /** 触发一次分类板块生成（force=true 时绕过同榜缓存，用于失败重试） */
+  const runCategorize = useCallback((target: HotSearchArchive, force: boolean) => {
+    const entries = buildCategoryEntries(target);
+    if (!entries.length) return;
+    const cacheKey = `${target.date}-${target.time}`;
+    categoryKeyRef.current = cacheKey;
+    setCategoriesLoading(true);
+    setCategoriesFailed(false);
+    categorizeHotSearch(cacheKey, entries, force)
+      .then((cats) => {
+        if (categoryKeyRef.current !== cacheKey) return; // 期间归档已切换，丢弃旧结果
+        if (cats && cats.length) {
+          setCategories(cats);
+          setExpandedCategories(new Set());
+          setCategoryShowAll(new Set());
+        } else {
+          setCategoriesFailed(true);
+        }
+      })
+      .finally(() => {
+        if (categoryKeyRef.current === cacheKey) setCategoriesLoading(false);
+      });
+  }, []);
+
+  // 榜单就绪后异步生成 AI 分类板块（不阻塞榜单浏览；GLM 关闭时跳过并直接展开详细榜单）
+  useEffect(() => {
+    setCategories(null);
+    setCategoriesFailed(false);
+    setExpandedCategories(new Set());
+    setCategoryShowAll(new Set());
+    setDetailExpanded(!showGLM);
+    if (!archive || !showGLM) {
+      setCategoriesLoading(false);
+      return;
+    }
+    runCategorize(archive, false);
+  }, [archive, showGLM, runCategorize]);
 
   /** 单条热搜条目渲染（桌面卡片与 WAP 弹窗共用），外层 li 由调用方包裹 */
   const renderHotItem = (item: HotSearchItem, key: HotSearchPlatform, name: string) => {
@@ -306,6 +393,132 @@ export function HotSearchExpert({ showGLM = true, variant = 'desktop' }: HotSear
       else next.add(key);
       return next;
     });
+  };
+
+  /** 分类板块独立展开/收起 */
+  const toggleCategory = (idx: number) => {
+    setExpandedCategories((prev) => {
+      const next = new Set(prev);
+      if (next.has(idx)) next.delete(idx);
+      else next.add(idx);
+      return next;
+    });
+  };
+
+  /** 板块内「展开全部/收起」 */
+  const toggleCategoryShowAll = (idx: number) => {
+    setCategoryShowAll((prev) => {
+      const next = new Set(prev);
+      if (next.has(idx)) next.delete(idx);
+      else next.add(idx);
+      return next;
+    });
+  };
+
+  /** 分类板块生成失败后的手动重试（绕过同榜缓存） */
+  const handleRegenerateCategories = () => {
+    if (!archive || categoriesLoading) return;
+    runCategorize(archive, true);
+  };
+
+  /** 分类板块内的单条热搜：浅蓝圆形序号 + 标题 + 平台徽章 + 热度，点击进入原工作流 */
+  const renderCategoryItem = (id: string) => {
+    const entry = itemLookup.get(id);
+    if (!entry) return null;
+    const { platform, name, short, item } = entry;
+    const hotText = formatHotValue(item.hot);
+    return (
+      <button
+        onClick={() => handlePickItem(item, platform, name)}
+        className="w-full flex items-center gap-2.5 px-3 py-2 rounded-full text-left hover:bg-gray-50 dark:hover:bg-gray-700/60 transition-colors"
+      >
+        <span className="shrink-0 w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900/60 text-blue-600 dark:text-blue-300 text-xs font-medium flex items-center justify-center">
+          {item.rank}
+        </span>
+        <span className="flex-1 min-w-0 text-sm text-gray-700 dark:text-gray-200 truncate">
+          {item.title}
+        </span>
+        <span className="shrink-0 px-1.5 py-0.5 rounded-full bg-gray-100 dark:bg-gray-700 text-[10px] leading-none text-gray-500 dark:text-gray-400">
+          {short}
+        </span>
+        {item.label && (
+          <span
+            title={item.label}
+            className="shrink-0 max-w-[30%] truncate text-[10px] leading-none px-1.5 py-0.5 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400"
+          >
+            {item.label}
+          </span>
+        )}
+        {hotText && (
+          <span className="shrink-0 text-xs text-gray-400 dark:text-gray-500 w-14 text-right">
+            {hotText}
+          </span>
+        )}
+      </button>
+    );
+  };
+
+  /** 单个分类板块卡片：序号 + AI 标题/摘要 + 条数徽章 + chevron，可独立展开/收起 */
+  const renderCategory = (cat: HotSearchCategory, idx: number) => {
+    const expanded = expandedCategories.has(idx);
+    return (
+      <div
+        key={`${idx}-${cat.title}`}
+        className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl p-3 sm:p-4 transition-colors"
+      >
+        <button
+          onClick={() => toggleCategory(idx)}
+          className="w-full flex items-center gap-3 px-1 py-0.5 text-left"
+        >
+          <span className="shrink-0 w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900/60 text-blue-600 dark:text-blue-300 text-xs font-medium flex items-center justify-center">
+            {idx + 1}
+          </span>
+          <span className="flex-1 min-w-0">
+            <span className="flex items-center gap-2">
+              <span className="truncate text-sm font-semibold text-gray-800 dark:text-gray-100">
+                {cat.title}
+              </span>
+              <span className="shrink-0 px-1.5 py-0.5 rounded-full bg-gray-100 dark:bg-gray-700 text-[10px] leading-none text-gray-500 dark:text-gray-400">
+                {cat.itemIds.length} 条
+              </span>
+            </span>
+            {cat.summary && (
+              <span className="mt-0.5 block text-xs leading-relaxed text-gray-400 dark:text-gray-500 line-clamp-2">
+                {cat.summary}
+              </span>
+            )}
+          </span>
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className={`shrink-0 h-4 w-4 text-gray-400 dark:text-gray-500 transition-transform ${expanded ? 'rotate-180' : ''}`}
+          >
+            <path d="m6 9 6 6 6-6" />
+          </svg>
+        </button>
+        {expanded && (
+          <>
+            <ul className="mt-1.5">
+              {(categoryShowAll.has(idx) ? cat.itemIds : cat.itemIds.slice(0, CATEGORY_PREVIEW_COUNT)).map((id) => (
+                <li key={id}>{renderCategoryItem(id)}</li>
+              ))}
+            </ul>
+            {cat.itemIds.length > CATEGORY_PREVIEW_COUNT && (
+              <button
+                onClick={() => toggleCategoryShowAll(idx)}
+                className="mt-1 w-full py-1.5 text-xs text-blue-600 dark:text-blue-400 rounded-full hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors"
+              >
+                {categoryShowAll.has(idx) ? '收起' : `展开全部 ${cat.itemIds.length} 条`}
+              </button>
+            )}
+          </>
+        )}
+      </div>
+    );
   };
 
   // 测速后首位的可用节点（先按索引新鲜度、再按延迟排序）
@@ -740,106 +953,187 @@ export function HotSearchExpert({ showGLM = true, variant = 'desktop' }: HotSear
             </div>
           )}
 
-          {!archiveLoading && !archiveError && archive && (
-            <>
-              {variant === 'wap' ? (
-                /* WAP 形态：平台折叠列表，点击后以底部弹窗展开；抓取失败的平台直接隐藏 */
-                (() => {
-                  const availablePlatforms = PLATFORM_META.filter(({ key }) => {
-                    const data = archive.platforms[key];
-                    return data && data.success && data.list.length > 0;
-                  });
-                  return (
-                    <div className="flex min-h-[calc(100dvh-15rem)] flex-col justify-center pt-[calc(var(--wap-safe-top,env(safe-area-inset-top))+5.5rem)]">
-                      {availablePlatforms.length === 0 ? (
-                        <p className="text-center text-sm text-gray-400 dark:text-gray-500">
-                          本期暂无可用榜单
-                        </p>
-                      ) : (
-                        <div className="space-y-2">
-                          {availablePlatforms.map(({ key, name }) => {
-                            const data = archive.platforms[key];
-                            const preview = data.list[0].title;
-                            const count = data.list.length;
-                            const brief = platformBriefs[`${archive.date}-${archive.time}-${key}`];
-                            return (
-                              <button
-                                key={key}
-                                onClick={() => setSheetPlatform(key)}
-                                className="w-full flex items-center gap-3 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-full px-4 py-2.5 text-left transition-colors hover:bg-gray-50 dark:hover:bg-gray-700/60"
-                              >
-                                <span className="shrink-0 text-sm font-semibold text-gray-800 dark:text-gray-100">
-                                  {name}
-                                </span>
-                                <span className="flex-1 min-w-0 text-xs text-gray-400 dark:text-gray-500 truncate">
-                                  {brief ? (
-                                    <span className="flex min-w-0 items-center gap-1.5">
-                                      <span className="shrink-0 rounded bg-blue-50 px-1 py-0.5 text-[9px] font-medium leading-none text-blue-500 dark:bg-blue-900/40 dark:text-blue-300">
-                                        AI
-                                      </span>
-                                      <span className="truncate">{brief}</span>
-                                    </span>
-                                  ) : (
-                                    <span className="truncate">{`${preview} 等 ${count} 条`}</span>
-                                  )}
-                                </span>
-                                <span className="shrink-0 text-xs text-blue-600 dark:text-blue-400">查看 ›</span>
-                              </button>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })()
-              ) : (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                  {PLATFORM_META.map(({ key, name }) => {
-                    const data = archive.platforms[key];
-                    if (!data || !data.success || data.list.length === 0) return null;
-                    const expanded = expandedPlatforms.has(key);
-                    const visibleItems = expanded ? data.list : data.list.slice(0, PREVIEW_COUNT);
+          {!archiveLoading && !archiveError && archive && (() => {
+            // 抓取成功且非空的平台（分类板块与详细榜单共用同一份可用性口径）
+            const availablePlatforms = PLATFORM_META.filter(({ key }) => {
+              const data = archive.platforms[key];
+              return data && data.success && data.list.length > 0;
+            });
+            const failedNames = PLATFORM_META.filter(
+              ({ key }) => archive.platforms[key] && !archive.platforms[key]!.success,
+            ).map(({ name }) => name);
+            const totalItems = availablePlatforms.reduce(
+              (sum, { key }) => sum + (archive.platforms[key]?.list.length ?? 0),
+              0,
+            );
 
-                    return (
-                      <div
-                        key={key}
-                        className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl p-4 transition-colors"
-                      >
-                        <div className="flex items-center justify-between mb-2 px-1">
-                          <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-100">{name}</h3>
-                          <span className="text-xs text-gray-400 dark:text-gray-500">{data.list.length} 条</span>
-                        </div>
-                        <ul>
-                          {visibleItems.map((item) => (
-                            <li key={`${item.rank}-${item.title}`}>{renderHotItem(item, key, name)}</li>
-                          ))}
-                        </ul>
-                        {data.list.length > PREVIEW_COUNT && (
-                          <button
-                            onClick={() => togglePlatform(key)}
-                            className="mt-1 w-full py-1.5 text-xs text-blue-600 dark:text-blue-400 rounded-full hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors"
-                          >
-                            {expanded ? '收起' : `展开全部 ${data.list.length} 条`}
-                          </button>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-
-              {variant !== 'wap' && PLATFORM_META.some(
-                ({ key }) => archive.platforms[key] && !archive.platforms[key]!.success,
-              ) && (
-                <p className="text-center text-xs text-gray-400 dark:text-gray-600 mt-4">
-                  以下平台本次抓取失败：
-                  {PLATFORM_META.filter(
-                    ({ key }) => archive.platforms[key] && !archive.platforms[key]!.success,
-                  ).map(({ name }) => name).join('、')}
+            // 全部平台抓取失败：保持原有降级（WAP 文案 / 桌面失败名单横幅）
+            if (availablePlatforms.length === 0) {
+              return variant === 'wap' ? (
+                <p className="pt-[calc(var(--wap-safe-top,env(safe-area-inset-top))+5.5rem)] text-center text-sm text-gray-400 dark:text-gray-500">
+                  本期暂无可用榜单
                 </p>
-              )}
-            </>
-          )}
+              ) : (
+                <p className="text-center text-xs text-gray-400 dark:text-gray-600 mt-4">
+                  以下平台本次抓取失败：{failedNames.join('、')}
+                </p>
+              );
+            }
+
+            return (
+              <div className={variant === 'wap' ? 'pt-[calc(var(--wap-safe-top,env(safe-area-inset-top))+5rem)]' : ''}>
+                {/* AI 内容分类板块：全平台热搜语义归类（GLM 关闭时不生成，详细榜单默认展开） */}
+                {showGLM && (
+                  <div className="mb-5">
+                    <div className="mb-2 flex items-center gap-2 px-1">
+                      <span className="px-2.5 py-1 bg-blue-50 dark:bg-blue-900/40 text-blue-600 dark:text-blue-300 text-xs rounded-full font-medium">
+                        AI 内容分类
+                      </span>
+                      <span className="ml-auto text-[10px] text-gray-300 dark:text-gray-600 select-none">
+                        AI生成 仅供参考
+                      </span>
+                    </div>
+                    {categoriesLoading && (
+                      <div className="space-y-3">
+                        {[1, 2, 3].map((i) => (
+                          <div
+                            key={i}
+                            className="h-20 rounded-2xl border border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 animate-pulse"
+                          />
+                        ))}
+                        <p className="text-center text-xs text-gray-400 dark:text-gray-500">
+                          Remo智能体正在对全网热搜进行语义归类…
+                        </p>
+                      </div>
+                    )}
+                    {!categoriesLoading && categoriesFailed && (
+                      <div className="rounded-2xl border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 p-4 text-center">
+                        <p className="mb-2.5 text-xs text-gray-400 dark:text-gray-500">
+                          分类板块生成失败，可在下方「详细热搜情况」中浏览完整榜单
+                        </p>
+                        <button
+                          onClick={handleRegenerateCategories}
+                          className="px-4 py-1.5 text-xs text-gray-600 dark:text-gray-300 rounded-full border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                        >
+                          重新生成
+                        </button>
+                      </div>
+                    )}
+                    {!categoriesLoading && !categoriesFailed && categories && (
+                      <div className="space-y-3">
+                        {categories.map((cat, idx) => renderCategory(cat, idx))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* 详细热搜情况胶囊：原始平台榜单默认折叠收纳，点击展开查看完整列表 */}
+                <div className="flex justify-center">
+                  <button
+                    onClick={() => setDetailExpanded((v) => !v)}
+                    className="inline-flex items-center gap-2 rounded-full border border-gray-200/70 dark:border-gray-700 bg-white/80 dark:bg-gray-800/70 backdrop-blur px-5 py-2.5 text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/60 transition-colors"
+                  >
+                    <span className="font-medium">详细热搜情况</span>
+                    <span className="text-xs tabular-nums text-gray-400 dark:text-gray-500">
+                      {availablePlatforms.length} 平台 · {totalItems} 条
+                    </span>
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className={`h-3.5 w-3.5 text-gray-400 dark:text-gray-500 transition-transform ${detailExpanded ? 'rotate-180' : ''}`}
+                    >
+                      <path d="m6 9 6 6 6-6" />
+                    </svg>
+                  </button>
+                </div>
+
+                {detailExpanded && (
+                  <div className="mt-4">
+                    {variant === 'wap' ? (
+                      /* WAP：平台折叠一行卡（AI 整榜概览），点击以底部弹窗展开完整榜单 */
+                      <div className="space-y-2">
+                        {availablePlatforms.map(({ key, name }) => {
+                          const data = archive.platforms[key]!;
+                          const preview = data.list[0].title;
+                          const count = data.list.length;
+                          const brief = platformBriefs[`${archive.date}-${archive.time}-${key}`];
+                          return (
+                            <button
+                              key={key}
+                              onClick={() => setSheetPlatform(key)}
+                              className="w-full flex items-center gap-3 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-full px-4 py-2.5 text-left transition-colors hover:bg-gray-50 dark:hover:bg-gray-700/60"
+                            >
+                              <span className="shrink-0 text-sm font-semibold text-gray-800 dark:text-gray-100">
+                                {name}
+                              </span>
+                              <span className="flex-1 min-w-0 text-xs text-gray-400 dark:text-gray-500 truncate">
+                                {brief ? (
+                                  <span className="flex min-w-0 items-center gap-1.5">
+                                    <span className="shrink-0 rounded bg-blue-50 px-1 py-0.5 text-[9px] font-medium leading-none text-blue-500 dark:bg-blue-900/40 dark:text-blue-300">
+                                      AI
+                                    </span>
+                                    <span className="truncate">{brief}</span>
+                                  </span>
+                                ) : (
+                                  <span className="truncate">{`${preview} 等 ${count} 条`}</span>
+                                )}
+                              </span>
+                              <span className="shrink-0 text-xs text-blue-600 dark:text-blue-400">查看 ›</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      /* 桌面：双列平台卡片，每平台默认前 10 条可展开全部 */
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                        {PLATFORM_META.map(({ key, name }) => {
+                          const data = archive.platforms[key];
+                          if (!data || !data.success || data.list.length === 0) return null;
+                          const expanded = expandedPlatforms.has(key);
+                          const visibleItems = expanded ? data.list : data.list.slice(0, PREVIEW_COUNT);
+
+                          return (
+                            <div
+                              key={key}
+                              className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl p-4 transition-colors"
+                            >
+                              <div className="flex items-center justify-between mb-2 px-1">
+                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-100">{name}</h3>
+                                <span className="text-xs text-gray-400 dark:text-gray-500">{data.list.length} 条</span>
+                              </div>
+                              <ul>
+                                {visibleItems.map((item) => (
+                                  <li key={`${item.rank}-${item.title}`}>{renderHotItem(item, key, name)}</li>
+                                ))}
+                              </ul>
+                              {data.list.length > PREVIEW_COUNT && (
+                                <button
+                                  onClick={() => togglePlatform(key)}
+                                  className="mt-1 w-full py-1.5 text-xs text-blue-600 dark:text-blue-400 rounded-full hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors"
+                                >
+                                  {expanded ? '收起' : `展开全部 ${data.list.length} 条`}
+                                </button>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    {variant !== 'wap' && failedNames.length > 0 && (
+                      <p className="text-center text-xs text-gray-400 dark:text-gray-600 mt-4">
+                        以下平台本次抓取失败：{failedNames.join('、')}
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })()}
         </>
       )}
 
@@ -880,6 +1174,8 @@ export function HotSearchExpert({ showGLM = true, variant = 'desktop' }: HotSear
       })()}
 
       {expertFooter}
+      {/* WAP 榜单内容现为纵向流式布局，底部留白避让悬浮标签栏 */}
+      {isWapList && <div aria-hidden className="h-32" />}
     </div>
   );
 }

@@ -1,11 +1,35 @@
-import { defineConfig } from 'vite'
+import { defineConfig, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
 import tsconfigPaths from "vite-tsconfig-paths";
+import { readFileSync } from 'node:fs'
+
+// 版本号单一来源：package.json
+const appVersion = (JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf-8')) as { version: string }).version
+const versionJson = JSON.stringify({ name: 'RemoSearch', version: appVersion })
+
+// 暴露 /version.json：开发环境走中间件，生产构建发射为静态资源（Netlify 直接可访问），
+// 供 RWACore 等外部容器读取当前版本
+const versionJsonPlugin = (): Plugin => ({
+  name: 'version-json',
+  configureServer(server) {
+    server.middlewares.use('/version.json', (_req, res) => {
+      res.setHeader('Content-Type', 'application/json; charset=utf-8')
+      res.end(versionJson)
+    })
+  },
+  generateBundle() {
+    this.emitFile({ type: 'asset', fileName: 'version.json', source: versionJson })
+  },
+})
 
 // https://vite.dev/config/
 export default defineConfig({
   build: {
     sourcemap: 'hidden',
+  },
+  define: {
+    // 注入到前端代码，main.tsx 会挂到 window.__REMOS_VERSION__
+    __APP_VERSION__: JSON.stringify(appVersion),
   },
   plugins: [
     react({
@@ -15,7 +39,8 @@ export default defineConfig({
         ],
       },
     }),
-    tsconfigPaths()
+    tsconfigPaths(),
+    versionJsonPlugin(),
   ],
   server: {
     // 第三方接口均不支持浏览器直连，统一通过 Vite 代理转发为同源请求

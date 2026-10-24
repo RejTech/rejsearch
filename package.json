@@ -1,7 +1,7 @@
 {
   "name": "rejsearch",
   "private": true,
-  "version": "α.26.1001.25",
+  "version": "α.26.1024.01_programmer's_festival",
   "type": "module",
   "scripts": {
     "dev": "vite",

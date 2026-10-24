@@ -10,7 +10,7 @@ interface ChatMessage {
   content: string;
 }
 
-async function callGLM(systemPrompt: string, userPrompt: string, maxTokens: number = 600): Promise<string> {
+async function callGLM(systemPrompt: string, userPrompt: string, maxTokens: number = 600, signal?: AbortSignal): Promise<string> {
   const response = await fetch(GLM_API_URL, {
     method: 'POST',
     headers: {
@@ -26,6 +26,7 @@ async function callGLM(systemPrompt: string, userPrompt: string, maxTokens: numb
       temperature: 0.3,
       max_tokens: maxTokens,
     }),
+    signal,
   });
 
   if (!response.ok) {
@@ -336,6 +337,256 @@ ${titles.map((t, i) => `${i + 1}. ${t.slice(0, 40)}`).join('\n')}
   const clean = raw.replace(/^["'「『]|["'」』]$/g, '').trim();
   platformBriefCache.set(cacheKey, clean);
   return clean;
+}
+
+// ===== 热搜专家：全平台热搜语义分类板块 =====
+
+/** 一个内容分类板块（AI 语义归类生成） */
+export interface HotSearchCategory {
+  title: string;     // 板块标题（概括本板块主题）
+  summary: string;   // 板块内容摘要（点名代表性事件/人物/产品）
+  itemIds: string[]; // 归入本板块的词条 ID（平台前缀+排名，如 w3）
+}
+
+/** 送入分类模型的单条词条 */
+export interface HotSearchCategoryEntry {
+  id: string;       // 词条唯一 ID（与 HotSearchCategory.itemIds 对应）
+  platform: string; // 平台名（供模型理解来源语境）
+  title: string;    // 热搜标题
+}
+
+// 同一期榜单（日期-时间点）只调用一次；失败也缓存，避免渲染循环反复请求，重试用 force 绕过
+const hotCategoryCache = new Map<string, HotSearchCategory[] | null>();
+
+// 固定主题分类法 + 关键词表：分组完全在本地瞬时完成（GLM-4-Flash 生成大 JSON 极慢易截断，
+// 实测 105 条词条单调用 78s 且 finish=length，故模型绝不参与分组，只负责小组标题/摘要）
+const CATEGORY_TAXONOMY: { key: string; title: string; keywords: string[] }[] = [
+  { key: 'tech', title: '科技数码', keywords: ['ai', '手机', '苹果', '华为', '小米', 'iphone', '安卓', '芯片', '模型', '机器人', '智能', '科技', '数码', 'openai', '谷歌', '微软', '5g', '电动车', '新能源', '电池', 'spacex', '特斯拉', '比亚迪', '无人机', '处理器', '发布会', 'kimi', 'claude', 'anthropic', '月之暗面', 'minimax', '开源', '大模型', 'gpt', 'deepseek', '阿里', '腾讯', '字节', '漏洞', '补丁', '代码', '开发者', 'api', '权重', '参数', '断网', '红队', '折叠屏', '开售', '显卡', '英伟达', '自动驾驶'] },
+  { key: 'ent', title: '娱乐影视', keywords: ['电影', '电视剧', '综艺', '明星', '演员', '歌手', '演唱会', '票房', '导演', '娱乐', '恋情', '结婚', '离婚', '音乐', '专辑', '男团', '女团', '偶像', '新剧', '开播', '主演', '红毯', '华晨宇', '刘宇宁', '肖战', '王一博', '易烊千玺', '赵丽颖', '杨幂', '综艺', '首映', '定档', '票房', '韩剧', '动画', '番剧'] },
+  { key: 'sports', title: '体育赛事', keywords: ['足球', '篮球', 'nba', 'cba', '奥运', '世界杯', '比赛', '球员', '球队', '夺冠', '联赛', '体育', '田径', '游泳', '乒乓', '羽毛球', '网球', 'f1', '决赛', '进球', '国足', '中超', '梅西', 'c罗', 'lpl', 's赛', '战队', '失利', '晋级', '冠军', '运动员'] },
+  { key: 'finance', title: '财经商业', keywords: ['股市', '股票', '基金', '经济', '金融', '央行', '房价', '楼市', '市值', '上市', '财报', '投资', '美元', '黄金', '油价', '贸易', '创业', '涨停', '股价', '利率', 'a股', '港股', '美股', '加息', '降息', 'gdp', '通胀', '贬值', '汇率', '债券'] },
+  { key: 'society', title: '社会民生', keywords: ['警方', '事故', '地震', '天气', '台风', '暴雨', '疫情', '医院', '学校', '教育', '高考', '考试', '交通', '航班', '火车', '法院', '判决', '案件', '退休', '工资', '社保', '遇难', '救援', '通报', '回应', '官方', '男子', '女子', '老人', '孩子', '家长', '老师', '司机', '乘客', '诈骗', '火灾', '失联', '遇难', '西藏', '近海'] },
+  { key: 'gaming', title: '游戏电竞', keywords: ['游戏', '电竞', '王者', '英雄', 'lol', '原神', 'steam', '玩家', '皮肤', '赛季', '手游', '网游', 'switch', 'ps5', '黑神话', '和平精英', '吃鸡', '米哈游', '网易游戏'] },
+  { key: 'politics', title: '时政国际', keywords: ['总统', '外交', '国际', '美国', '俄罗斯', '日本', '韩国', '朝鲜', '欧洲', '联合国', '战争', '政府', '政策', '关税', '选举', '访华', '会谈', '制裁', '军方', '俄乌', '停火', '伊朗', '以色列', '乌克兰', '北约', '菲', '南海', '台海', '书记', '省委', '任职'] },
+  { key: 'life', title: '生活消费', keywords: ['美食', '旅游', '酒店', '景区', '购物', '快递', '外卖', '养生', '健康', '减肥', '化妆', '穿搭', '汽车', '驾照', '假期', '机票', '火锅', '奶茶', '烧烤', '露营', '民宿', '打卡'] },
+  { key: 'other', title: '其他热点', keywords: [] },
+];
+
+/** 本地归类：标题命中关键词最多的主题胜出，无命中归入「其他热点」 */
+function classifyTitle(title: string): string {
+  const t = title.toLowerCase();
+  let best = 'other';
+  let bestScore = 0;
+  for (const cat of CATEGORY_TAXONOMY) {
+    let score = 0;
+    for (const kw of cat.keywords) {
+      if (t.includes(kw)) score++;
+    }
+    if (score > bestScore) {
+      bestScore = score;
+      best = cat.key;
+    }
+  }
+  return best;
+}
+
+/** 为单个板块生成 AI 标题与摘要（小输出 30 秒超时；失败回退默认标题，不影响整体） */
+async function summarizeCategoryGroup(
+  defaultTitle: string,
+  sample: { platform: string; title: string }[],
+): Promise<{ title: string; summary: string }> {
+  const lines = sample.map((e) => `${e.platform}｜${e.title.slice(0, 30)}`).join('\n');
+  const prompt = `以下热搜词条被归入「${defaultTitle}」方向：
+
+${lines}
+
+请输出 JSON：{"title":"板块名","summary":"一句话摘要"}
+要求：
+1. title 10 字以内，概括这批词条的共同主题（可比「${defaultTitle}」更精准具体）
+2. summary 30-60 字，点名其中最具代表性的事件/人物/产品名称
+3. 严格只输出 JSON，不要任何额外文字`;
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 30000);
+  try {
+    const raw = await callGLM(
+      '你是热搜内容分析助手，擅长为一组同主题热搜词条提炼精准的板块名与一句话摘要。',
+      prompt,
+      150,
+      controller.signal,
+    );
+    const parsed = extractJson(raw);
+    if (parsed && typeof parsed.title === 'string' && parsed.title.trim()) {
+      return {
+        title: parsed.title.trim().slice(0, 20),
+        summary: typeof parsed.summary === 'string' ? parsed.summary.trim().slice(0, 120) : '',
+      };
+    }
+  } catch {
+    // 单组失败：回退默认标题、无摘要
+  } finally {
+    clearTimeout(timer);
+  }
+  return { title: defaultTitle, summary: '' };
+}
+
+/**
+ * 对当期全部平台热搜做语义归类，输出若干板块（标题+摘要+词条 ID）。
+ * 混合方案：本地关键词分类器瞬时完成分组（零模型负担、永不失败）；
+ * 板块超过 SUBDIVIDE_THRESHOLD 条时本地做第二层共现词聚类自动细分（仍零模型负担）；
+ * 各组标题/摘要由 GLM 并发生成（每次输出仅约 80 字，秒级返回），单组失败回退默认标题。
+ */
+export async function categorizeHotSearch(
+  cacheKey: string,
+  entries: HotSearchCategoryEntry[],
+  force = false,
+): Promise<HotSearchCategory[] | null> {
+  if (!force) {
+    const cached = hotCategoryCache.get(cacheKey);
+    if (cached !== undefined) return cached;
+  }
+  if (!entries.length) return null;
+
+  // 1. 本地分组（瞬时）
+  const byId = new Map(entries.map((e) => [e.id, e]));
+  const groups = new Map<string, string[]>();
+  for (const e of entries) {
+    const key = classifyTitle(e.title);
+    const list = groups.get(key);
+    if (list) list.push(e.id);
+    else groups.set(key, [e.id]);
+  }
+  // 按规模降序取前 8 组（规模即重要性）；「其他热点」为兜底杂项，固定垫底不抢占首位
+  const sorted = [...groups.entries()]
+    .sort((a, b) => {
+      if (a[0] === 'other') return 1;
+      if (b[0] === 'other') return -1;
+      return b[1].length - a[1].length;
+    })
+    .slice(0, 8);
+
+  // 2. 超阈值板块二次细分（本地共现词聚类，瞬时）
+  interface SectionDef {
+    defaultTitle: string;
+    itemIds: string[];
+    isOther: boolean;
+  }
+  const sections: SectionDef[] = [];
+  for (const [key, itemIds] of sorted) {
+    const tax = CATEGORY_TAXONOMY.find((t) => t.key === key) ?? CATEGORY_TAXONOMY[CATEGORY_TAXONOMY.length - 1];
+    if (itemIds.length <= SUBDIVIDE_THRESHOLD) {
+      sections.push({ defaultTitle: tax.title, itemIds, isOther: key === 'other' });
+      continue;
+    }
+    const subEntries = itemIds
+      .map((id) => byId.get(id))
+      .filter((e): e is HotSearchCategoryEntry => !!e);
+    for (const sub of subclusterByTerms(subEntries)) {
+      // 兜底标题：父类名·高频实体词；无实体词的剩余组用「父类名·其他」
+      const defaultTitle = sub.term ? `${tax.title}·${sub.term}` : `${tax.title}·其他`;
+      sections.push({ defaultTitle, itemIds: sub.ids, isOther: key === 'other' && !sub.term });
+    }
+  }
+  // 细分后重新排序：规模降序，兜底杂项仍垫底；总量封顶 12 个板块
+  const ordered = sections
+    .sort((a, b) => {
+      if (a.isOther !== b.isOther) return a.isOther ? 1 : -1;
+      return b.itemIds.length - a.itemIds.length;
+    })
+    .slice(0, 12);
+
+  // 3. 各板块 AI 标题/摘要：并发池限流 4 路（端侧对高并发小请求会排队拖慢）；
+  //    40s 整体看门狗——超时先用默认标题兜底渲染，UI 绝不悬挂
+  const withDefaults: HotSearchCategory[] = ordered.map(({ defaultTitle, itemIds }) => ({
+    title: defaultTitle,
+    summary: '',
+    itemIds,
+  }));
+  const generate = async ({ defaultTitle, itemIds }: (typeof ordered)[number]): Promise<HotSearchCategory> => {
+    const sample = itemIds
+      .map((id) => byId.get(id))
+      .filter((e): e is HotSearchCategoryEntry => !!e)
+      .slice(0, 25);
+    const { title, summary } = await summarizeCategoryGroup(defaultTitle, sample);
+    return { title, summary, itemIds };
+  };
+  const categories: HotSearchCategory[] = await Promise.race([
+    mapPool(ordered, 4, generate),
+    new Promise<HotSearchCategory[]>((resolve) => setTimeout(() => resolve(withDefaults), 40000)),
+  ]);
+
+  const result = categories.length ? categories : null;
+  hotCategoryCache.set(cacheKey, result);
+  return result;
+}
+
+/** 板块词条数超过该阈值时触发二次细分 */
+const SUBDIVIDE_THRESHOLD = 20;
+/** 单个板块最多细分出的子板块数 */
+const MAX_SUBGROUPS = 6;
+
+// 共现词停用字：含这些字的词组不携带实体信息（避免「的了在」之类伪词当选主题词）
+const TERM_STOP_CHARS = /[的了是在有和就都也不与及或等被把对很又但及其你我他她它们这那什怎么啊吗吧呢哦哪还也要会能可以没无不为于之乎其者所的]/;
+
+/** 提取标题中的候选实体词：拉丁词（≥2 字符）与中文连续片段的 2-4 gram */
+function extractTerms(title: string): Set<string> {
+  const terms = new Set<string>();
+  for (const m of title.toLowerCase().matchAll(/[a-z0-9][a-z0-9.+-]{1,}/g)) {
+    terms.add(m[0]);
+  }
+  for (const m of title.matchAll(/[一-鿿]{2,}/g)) {
+    const s = m[0];
+    for (let len = 2; len <= 4 && len <= s.length; len++) {
+      for (let i = 0; i + len <= s.length; i++) {
+        const gram = s.slice(i, i + len);
+        if (!TERM_STOP_CHARS.test(gram)) terms.add(gram);
+      }
+    }
+  }
+  return terms;
+}
+
+/**
+ * 第二层本地聚类：统计组内实体词文档频次，按高频词贪心划分共享该词的词条；
+ * 未被任何高频词覆盖的词条进剩余组（term=''）。全程本地计算，瞬时完成。
+ */
+function subclusterByTerms(entries: HotSearchCategoryEntry[]): { term: string; ids: string[] }[] {
+  const itemTerms = entries.map((e) => ({ id: e.id, terms: extractTerms(e.title) }));
+  const df = new Map<string, number>();
+  for (const it of itemTerms) {
+    for (const t of it.terms) df.set(t, (df.get(t) ?? 0) + 1);
+  }
+  // 高频词候选：至少覆盖 2 条；频次优先，同频次取长词（更具体）
+  const candidates = [...df.entries()]
+    .filter(([, c]) => c >= 2)
+    .sort((a, b) => b[1] - a[1] || b[0].length - a[0].length);
+  const assigned = new Set<string>();
+  const clusters: { term: string; ids: string[] }[] = [];
+  for (const [term] of candidates) {
+    if (clusters.length >= MAX_SUBGROUPS) break;
+    const ids = itemTerms.filter((it) => !assigned.has(it.id) && it.terms.has(term)).map((it) => it.id);
+    if (ids.length < 2) continue;
+    ids.forEach((id) => assigned.add(id));
+    clusters.push({ term, ids });
+  }
+  const rest = itemTerms.filter((it) => !assigned.has(it.id)).map((it) => it.id);
+  if (rest.length) clusters.push({ term: '', ids: rest });
+  return clusters;
+}
+
+/** 简单并发池：最多 limit 路并发执行 fn，保持结果顺序 */
+async function mapPool<T, R>(items: T[], limit: number, fn: (item: T) => Promise<R>): Promise<R[]> {
+  const results = new Array<R>(items.length);
+  let next = 0;
+  await Promise.all(
+    Array.from({ length: Math.min(limit, items.length) }, async () => {
+      while (next < items.length) {
+        const i = next++;
+        results[i] = await fn(items[i]);
+      }
+    }),
+  );
+  return results;
 }
 
 // ===== AI 自搜关键词的相关性护栏 =====

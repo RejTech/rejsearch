@@ -270,16 +270,27 @@ export interface HotSearchIndex {
   dates: Record<string, string[]>; // date -> 可用时间点列表，如 {"2026-10-01": ["01-07","01-08"]}
 }
 
-/** 平台元数据（按固定顺序展示，AIHOT 置顶） */
-export const PLATFORM_META: { key: HotSearchPlatform; name: string }[] = [
-  { key: 'aihot', name: 'AIHOT 热榜' },
-  { key: 'weibo', name: '微博热搜' },
-  { key: 'zhihu', name: '知乎热榜' },
-  { key: 'baidu', name: '百度实时热点' },
-  { key: 'bilibili', name: '哔哩哔哩热搜' },
-  { key: 'douyin', name: '抖音热榜' },
-  { key: 'toutiao', name: '今日头条热榜' },
+/** 平台元数据（按固定顺序展示，AIHOT 置顶）；short 用于分类板块词条上的紧凑平台徽章 */
+export const PLATFORM_META: { key: HotSearchPlatform; name: string; short: string }[] = [
+  { key: 'aihot', name: 'AIHOT 热榜', short: 'AIHOT' },
+  { key: 'weibo', name: '微博热搜', short: '微博' },
+  { key: 'zhihu', name: '知乎热榜', short: '知乎' },
+  { key: 'baidu', name: '百度实时热点', short: '百度' },
+  { key: 'bilibili', name: '哔哩哔哩热搜', short: 'B站' },
+  { key: 'douyin', name: '抖音热榜', short: '抖音' },
+  { key: 'toutiao', name: '今日头条热榜', short: '头条' },
 ];
+
+/** 分类板块词条 ID 的平台前缀（id = 前缀 + 平台内排名，如 w3 = 微博第 3 条） */
+export const PLATFORM_ID_PREFIX: Record<HotSearchPlatform, string> = {
+  aihot: 'a',
+  weibo: 'w',
+  zhihu: 'z',
+  baidu: 'b',
+  bilibili: 'v',
+  douyin: 'd',
+  toutiao: 't',
+};
 
 /** 归档不可变，做进程内缓存，切换日期/时间点时避免重复请求 */
 const archiveCache = new Map<string, HotSearchArchive>();
