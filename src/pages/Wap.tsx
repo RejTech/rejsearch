@@ -4,9 +4,21 @@ import { SearchResults } from '../components/SearchResults';
 import { ChatMode } from '../components/ChatMode';
 import { HotSearchExpert } from '../components/HotSearchExpert';
 import { playLift } from '../lib/sound';
-import { isEmbedApp } from '../lib/utils';
-// 安卓安装包直链（Vite 会将文件产出为带哈希的静态资源 URL，开发/生产均可用）
-import latestApkUrl from '../assets/apks/latest.apk?url';
+import { isEmbedApp, getEmbedAppUaVersion } from '../lib/utils';
+
+// 由 vite.config.ts define 注入（package.json 的 apkVersion）
+declare const __APK_VERSION__: string;
+
+// 根据 apkVersion 自动定位安装包：匹配 RemoSearchApp_v<apkVersion>_release.apk，
+// 未匹配时兜底取目录下唯一/首个 APK；发新版只需替换文件 + 改 package.json，无需动代码
+const apkModules = import.meta.glob('../assets/apks/*.apk', {
+  eager: true,
+  query: '?url',
+  import: 'default',
+}) as Record<string, string>;
+const apkUrls = Object.entries(apkModules);
+const latestApkUrl: string | undefined =
+  apkUrls.find(([path]) => path.includes(`_v${__APK_VERSION__}_`))?.[1] ?? apkUrls[0]?.[1];
 
 type WapMode = 'search' | 'chat' | 'hot';
 
@@ -34,6 +46,10 @@ export default function Wap() {
   const [mode, setMode] = useState<WapMode>(() => parseHashMode() ?? 'search');
   // UA 不会变，首帧判断一次即可
   const [embed] = useState(isEmbedApp);
+  // RWACore UA 版本与最新 apkVersion 不一致（含旧版宿主未携带版本号）→ 弹更新弹窗
+  const [uaVersion] = useState(getEmbedAppUaVersion);
+  const [updateDismissed, setUpdateDismissed] = useState(false);
+  const showUpdateDialog = embed && !updateDismissed && uaVersion !== __APK_VERSION__ && !!latestApkUrl;
 
   // 切换模式：播放 lift 音效（点击当前已选模式不响）
   const switchMode = (next: WapMode) => {
@@ -87,11 +103,11 @@ export default function Wap() {
           <>
             <SearchBar showTitle={false} />
             {/* 下载通知：仅非内嵌（非 RWACore）访问时展示，内嵌宿主已有原生入口 */}
-            {!embed && (
+            {!embed && latestApkUrl && (
               <div className="mx-auto mt-4 w-full max-w-3xl px-4 sm:px-6">
                 <a
                   href={latestApkUrl}
-                  download="RemoSearch-latest.apk"
+                  download={`RemoSearchApp_v${__APK_VERSION__}.apk`}
                   className="liquid-glass flex items-center justify-between gap-3 rounded-2xl px-4 py-3 transition-colors hover:bg-white/70 dark:hover:bg-gray-700/50"
                 >
                   <div className="min-w-0">
@@ -142,6 +158,43 @@ export default function Wap() {
             ))}
           </div>
         </nav>
+      )}
+
+      {/* RWACore 版本过旧更新弹窗：UA 版本 ≠ apkVersion 时显示 */}
+      {showUpdateDialog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-6 backdrop-blur-sm">
+          <div className="liquid-glass w-full max-w-sm rounded-2xl p-5">
+            <h2 className="text-base font-semibold text-gray-900 dark:text-white">
+              发现新版本
+            </h2>
+            <p className="mt-2 text-sm leading-relaxed text-gray-600 dark:text-gray-300">
+              RemoSearch App 已更新至
+              <span className="mx-1 font-medium text-blue-600 dark:text-blue-400">{__APK_VERSION__}</span>
+              {uaVersion ? (
+                <>
+                  ，当前版本
+                  <span className="mx-1 font-medium text-gray-800 dark:text-gray-200">{uaVersion}</span>
+                </>
+              ) : null}
+              。建议更新以获得最新功能与修复。
+            </p>
+            <div className="mt-4 flex gap-2.5">
+              <button
+                onClick={() => setUpdateDismissed(true)}
+                className="flex-1 rounded-full border border-gray-300/70 bg-white/50 py-2.5 text-sm font-medium text-gray-600 transition-colors hover:bg-white/80 dark:border-gray-600 dark:bg-gray-700/40 dark:text-gray-300 dark:hover:bg-gray-700/70"
+              >
+                暂不更新
+              </button>
+              <a
+                href={latestApkUrl}
+                download={`RemoSearchApp_v${__APK_VERSION__}.apk`}
+                className="flex-1 rounded-full bg-gray-800 py-2.5 text-center text-sm font-medium text-white transition-colors hover:bg-gray-700 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-gray-200"
+              >
+                立即更新
+              </a>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

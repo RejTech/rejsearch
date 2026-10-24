@@ -3,9 +3,11 @@ import react from '@vitejs/plugin-react'
 import tsconfigPaths from "vite-tsconfig-paths";
 import { readFileSync } from 'node:fs'
 
-// 版本号单一来源：package.json
-const appVersion = (JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf-8')) as { version: string }).version
-const versionJson = JSON.stringify({ name: 'RemoSearch', version: appVersion })
+// 版本号单一来源：package.json（version = 前端版本，apkVersion = RemoSearchApp 安装包版本，独立维护）
+const pkg = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf-8')) as { version: string; apkVersion: string }
+const appVersion = pkg.version
+const apkVersion = pkg.apkVersion
+const versionJson = JSON.stringify({ name: 'RemoSearch', version: appVersion, apkVersion })
 
 // 暴露 /version.json：开发环境走中间件，生产构建发射为静态资源（Netlify 直接可访问），
 // 供 RWACore 等外部容器读取当前版本
@@ -28,8 +30,9 @@ export default defineConfig({
     sourcemap: 'hidden',
   },
   define: {
-    // 注入到前端代码，main.tsx 会挂到 window.__REMOS_VERSION__
+    // 注入到前端代码，main.tsx 会挂到 window.__REMOS_VERSION__ / __REMOS_APK_VERSION__
     __APP_VERSION__: JSON.stringify(appVersion),
+    __APK_VERSION__: JSON.stringify(apkVersion),
   },
   plugins: [
     react({

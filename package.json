@@ -1,7 +1,8 @@
 {
   "name": "rejsearch",
   "private": true,
-  "version": "α.26.1024.01_programmer's_festival",
+  "version": "α.26.1025.01",
+  "apkVersion": "2026.10.25.0724",
   "type": "module",
   "scripts": {
     "dev": "vite",
