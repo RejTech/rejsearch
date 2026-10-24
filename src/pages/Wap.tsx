@@ -46,10 +46,10 @@ export default function Wap() {
   const [mode, setMode] = useState<WapMode>(() => parseHashMode() ?? 'search');
   // UA 不会变，首帧判断一次即可
   const [embed] = useState(isEmbedApp);
-  // RWACore UA 版本与最新 apkVersion 不一致（含旧版宿主未携带版本号）→ 弹更新弹窗
+  // RWACore UA 版本与最新 apkVersion 不一致（含旧版宿主未携带版本号）→ 顶部轻量更新横幅
   const [uaVersion] = useState(getEmbedAppUaVersion);
   const [updateDismissed, setUpdateDismissed] = useState(false);
-  const showUpdateDialog = embed && !updateDismissed && uaVersion !== __APK_VERSION__ && !!latestApkUrl;
+  const showUpdateBanner = embed && !updateDismissed && uaVersion !== __APK_VERSION__ && !!latestApkUrl;
 
   // 切换模式：播放 lift 音效（点击当前已选模式不响）
   const switchMode = (next: WapMode) => {
@@ -99,6 +99,39 @@ export default function Wap() {
           embed ? 'pb-[calc(1rem+var(--wap-safe-bottom,env(safe-area-inset-bottom)))]' : 'pb-36'
         }`}
       >
+        {/* RWACore 版本过旧提示：轻量横幅（同下载卡片样式），点击更新 / 可忽略 */}
+        {showUpdateBanner && (
+          <div className="mx-auto mb-3 w-full max-w-3xl px-1 sm:px-6">
+            <div className="liquid-glass flex items-center justify-between gap-3 rounded-2xl px-4 py-3">
+              <a
+                href={latestApkUrl}
+                download={`RemoSearchApp_v${__APK_VERSION__}.apk`}
+                className="flex min-w-0 flex-1 items-center justify-between gap-3"
+              >
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-gray-800 dark:text-gray-100">
+                    发现新版本 {__APK_VERSION__}
+                  </p>
+                  <p className="mt-0.5 truncate text-xs text-gray-500 dark:text-gray-400">
+                    {uaVersion ? `当前版本 ${uaVersion}，` : ''}点击更新体验最新功能
+                  </p>
+                </div>
+                <span className="shrink-0 rounded-full bg-gray-800 px-4 py-1.5 text-xs font-medium text-white dark:bg-gray-100 dark:text-gray-900">
+                  立即更新
+                </span>
+              </a>
+              <button
+                onClick={() => setUpdateDismissed(true)}
+                aria-label="忽略本次更新"
+                className="shrink-0 rounded-full p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-300"
+              >
+                <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4">
+                  <path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        )}
         {mode === 'search' && (
           <>
             <SearchBar showTitle={false} />
@@ -158,43 +191,6 @@ export default function Wap() {
             ))}
           </div>
         </nav>
-      )}
-
-      {/* RWACore 版本过旧更新弹窗：UA 版本 ≠ apkVersion 时显示 */}
-      {showUpdateDialog && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-6 backdrop-blur-sm">
-          <div className="liquid-glass w-full max-w-sm rounded-2xl p-5">
-            <h2 className="text-base font-semibold text-gray-900 dark:text-white">
-              发现新版本
-            </h2>
-            <p className="mt-2 text-sm leading-relaxed text-gray-600 dark:text-gray-300">
-              RemoSearch App 已更新至
-              <span className="mx-1 font-medium text-blue-600 dark:text-blue-400">{__APK_VERSION__}</span>
-              {uaVersion ? (
-                <>
-                  ，当前版本
-                  <span className="mx-1 font-medium text-gray-800 dark:text-gray-200">{uaVersion}</span>
-                </>
-              ) : null}
-              。建议更新以获得最新功能与修复。
-            </p>
-            <div className="mt-4 flex gap-2.5">
-              <button
-                onClick={() => setUpdateDismissed(true)}
-                className="flex-1 rounded-full border border-gray-300/70 bg-white/50 py-2.5 text-sm font-medium text-gray-600 transition-colors hover:bg-white/80 dark:border-gray-600 dark:bg-gray-700/40 dark:text-gray-300 dark:hover:bg-gray-700/70"
-              >
-                暂不更新
-              </button>
-              <a
-                href={latestApkUrl}
-                download={`RemoSearchApp_v${__APK_VERSION__}.apk`}
-                className="flex-1 rounded-full bg-gray-800 py-2.5 text-center text-sm font-medium text-white transition-colors hover:bg-gray-700 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-gray-200"
-              >
-                立即更新
-              </a>
-            </div>
-          </div>
-        </div>
       )}
     </div>
   );

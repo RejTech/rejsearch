@@ -9,7 +9,7 @@
 #### 2. RWACore 版本检查与更新弹窗
 
 - 版本信息统一由 package.json 维护：`version`（前端）+ `apkVersion`（安装包，独立字段、发版只改一行）；`GET /version.json`（开发走 Vite 中间件、生产构建自动产出静态文件）与 `window.__REMOS_VERSION__` / `__REMOS_APK_VERSION__` 两个入口供 RWACore 读取。
-- WAP 端检测：UA 含 RWACore 且其后跟随的版本号（支持 `RWACore/x.y.z` 与 `RWACore x.y.z` 形态）与 `apkVersion` 不一致时（含旧版宿主未携带版本号），弹出「发现新版本」弹窗——liquid-glass 卡片展示最新/当前版本号，「立即更新」直链下载最新 APK（下载文件名随 apkVersion 动态生成），「暂不更新」关闭。
+- WAP 端检测：UA 含 RWACore 且其后跟随的版本号（支持 `RWACore/x.y.z` 与 `RWACore x.y.z` 形态）与 `apkVersion` 不一致时（含旧版宿主未携带版本号），内容区顶部显示「发现新版本」轻量横幅（与下载卡片同款 liquid-glass 样式，不遮挡操作）——展示最新/当前版本号，点击横幅直链下载最新 APK（下载文件名随 apkVersion 动态生成），右侧 × 可忽略。
 
 #### 3. 热搜专家：AI 内容分类板块（桌面 + WAP）
 - 榜单就绪后对当期**全平台热搜词条**做语义归类（`categorizeHotSearch`）：本地关键词分类法瞬时完成分组，板块标题与 30-60 字内容摘要由 Remo智能体（GLM-4-Flash）并发生成（点名代表性事件/人物/产品）。
