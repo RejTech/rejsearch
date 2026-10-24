@@ -1,16 +1,17 @@
-# 锐机超级搜索 v6
+# RemoSearch - 第七代搜索模型
 
-基于 React 18 + TypeScript + Vite + TailwindCSS 构建的智能搜索引擎前端，集成 AnySearch 搜索 API、GLM-4-Flash 大语言模型与基于**锐机智进**（自研自进化数据库技术）构建的热搜数据库 [RejHotSearchDB](https://github.com/RejTech/RejHotSearchDB)，提供搜索结果 AI 概括、AI 自搜、热搜专家、嵌入式组件等能力。
+基于 React 18 + TypeScript + Vite + TailwindCSS 构建的智能搜索引擎前端，集成 AnySearch 搜索 API、**Remo智能体**（语言能力基于 GLM-4-Flash 大语言模型）与基于**锐机智进**（自研自进化数据库技术）构建的热搜数据库 [RejHotSearchDB](https://github.com/RejTech/RejHotSearchDB)，提供搜索结果 AI 概括、AI 自搜、热搜专家、嵌入式组件等能力。
 
 ## 核心功能
 
 ### 模式切换
+- **品牌标题**：主页大标题为 `RemoSearch`，后缀「第七代搜索模型」以**上挂徽章**挂在标题右上角（浅蓝胶囊，深浅色适配）
 - **三模式**：顶部滑块切换「搜索主导」「AI 自搜」（BETA）与「锐机热搜专家」（NEW）
 - **搜索主导**：经典搜索体验，结果列表 + 右侧详情面板
 - **AI 自搜**：一次提问，AI 自动提取关键词执行多次搜索并综合回答；再次提问自动开启新会话（发送前上一次结果保持显示）
 - **锐机热搜专家**：基于 [RejHotSearchDB](https://github.com/RejTech/RejHotSearchDB) 归档，按日期/时间点浏览各平台热搜，点击热搜词条直接进入原有检索与 AI 工作流
 
-### 锐机热搜专家（v6 新增）
+### 锐机热搜专家（第七代新增）
 > 本模块的热搜数据由 [RejHotSearchDB](https://github.com/RejTech/RejHotSearchDB) 提供，该库基于**锐机智进数据库技术**（自研自进化数据库，与本搜索前端 rejsearch 为相互独立的技术体系）构建。
 - **热搜数据源**：对接 `RejTech/RejHotSearchDB` 定时归档的 JSON 数据，覆盖 **AIHOT 热榜（置顶展示）**、微博、知乎、百度、哔哩哔哩、抖音、今日头条七个平台（单平台抓取失败不影响其他平台）；AIHOT 汇聚各大 AI 厂商官方 Blog/RSS 资讯，条目标签即来源名称
 - **日期/时间点选择**：下拉菜单选择归档日期（默认最新日期）与当天抓取时间点（默认最新时间点），索引键直接来自数据端，不做任何前端时区加工
@@ -28,7 +29,7 @@
 - **结果分页**：每页 10 条结果，支持翻页导航
 - **响应式布局**：桌面端右侧详情面板，移动端底部弹窗详情
 
-### 移动端 WAP 界面（v6 新增）
+### 移动端 WAP 界面（第七代新增）
 > 手机不再使用桌面自适应布局（过窄过挤），而是自动进入为手机重新设计的专属界面。
 - **自动分流**：基于 UA（含 iPadOS 特判，桌面窄窗口不触发）——移动设备访问主页自动跳转 `/wap`，桌面设备访问 `/wap` 自动回到主页；URL 添加 `?force` 参数可跳过分流，便于桌面调试预览 WAP 界面
 - **App 式结构**：三个模式（搜索 / AI 自搜 / 热搜）改为**底部悬浮标签栏**，白底圆角胶囊 + 滑动高亮药丸，贴合 iPhone 安全区（`env(safe-area-inset-*)`）
@@ -38,20 +39,22 @@
 - **音效反馈**：底栏切换模式播放 lift 音效；AI 自搜与结果页追问回答完成时播放 perk 提示音（停止/失败不响）
 - **WAP 自搜模式**：无顶部栏，消息区满宽玻璃气泡（AI 回复半透明白底 + 毛玻璃，用户深色气泡，浮入动画），搜索步骤折叠/引用徽章/水印保留；输入框为底部固定 LiquidGlass 单行药丸（透明输入 + 深色胶囊发送/停止，与底栏同构），「清空对话」为右上角小胶囊；消息随页面流滚动
 - **同心圆角**：WAP 弹层（下拉面板等）容器圆角与内部胶囊/气泡按同心圆规则取值（容器 32px = 内边距 + 内层 20~22px 胶囊圆角），圆弧共用圆心
-- **热搜折叠弹窗**：WAP 热搜专家中各平台默认折叠为一行卡片，卡片中部为 **AI（GLM）整榜一句话概览**（涉及哪些圈子/产品/人物，带「AI」小徽标，失败自动回退为「首条标题 等 N 条」）；点击后以底部弹窗（bottom sheet）展开该平台完整榜单，点击词条直接进入检索工作流；桌面端保持双列卡片形态
+- **热搜折叠弹窗**：WAP 热搜专家中各平台默认折叠为一行卡片，卡片中部为 **AI（Remo智能体）整榜一句话概览**（涉及哪些圈子/产品/人物，带「AI」小徽标，失败自动回退为「首条标题 等 N 条」）；点击后以底部弹窗（bottom sheet）展开该平台完整榜单，点击词条直接进入检索工作流；桌面端保持双列卡片形态
 - **安卓 App 内嵌支持**：UA 含 `RWACore` 时判定为内嵌宿主，**隐藏底部标签栏**（宿主 App 自带导航），并把底栏占位归零让置底输入/追问栏自动贴底；页面模式由 **`#hash` 切换**（`#search` / `#chat` / `#hot`，兼容 `#/hot`）——宿主改 `location.hash` 即切页，站内切换也会把当前模式写回 hash 供宿主读取；`/#hot` 可直接深链到热搜页（跳转 `/wap` 时保留 hash）
 
-### AI 追问（v6 恢复）
+### AI 追问（第七代恢复）
 - 搜索/热搜检索结果生成完后可**基于当前结果多轮追问**：移动端为底栏上方「追问」药丸（点击展开追问栏），桌面端为「AI 总体概括」卡右上角「AI 追问」按钮（打开居中模态）
 - AI 回答流式输出、支持 Markdown 与引用徽章；新搜索自动重置追问会话（AI 自搜模式保持单次会话不变）
 
-### AI 能力（GLM-4-Flash）
+### AI 能力（Remo智能体）
+> Remo智能体：RemoSearch 内置的 AI 能力统称，语言能力基于 GLM-4-Flash（智谱 BigModel）。
+
 - **总体概括**：搜索完成后流式生成 200-500 字综合摘要，引用标记 `[N]` / `[1,2,3]` 渲染为可点击蓝色徽章，点击跳转对应结果详情
 - **AI 自搜**：单次会话内自动提取搜索关键词、多次搜索、流式综合回答；搜索步骤可下拉展开查看每条结果；再次提问自动开启新会话
 - **热搜模式联动**：热搜专家模式下的搜索结果同样触发 AI 总体概括，并支持详情摘要
 - **逐字浮入动画**：AI 输出按流式进度逐字浮现，末尾带闪烁光标
-- **许可证解析**：使用 GLM 解析 GPLv3 许可证，区分「允许做」与「不允许做」
-- **超时与中断**：GLM 调用支持 AbortSignal 中断，60 秒首响应超时自动失败；"停止"按钮真正中断流式请求
+- **许可证解析**：使用 Remo智能体解析 GPLv3 许可证，区分「允许做」与「不允许做」
+- **超时与中断**：Remo智能体调用支持 AbortSignal 中断，60 秒首响应超时自动失败；"停止"按钮真正中断流式请求
 
 ### AI 生成内容水印（强制）
 为避免 AI 生成内容被误用为权威来源，所有 AI 输出容器均叠加斜向「AI生成 仅供参考」水印：
@@ -71,7 +74,7 @@
 主页底栏「定制内嵌部件」按钮可配置以下功能并生成嵌入链接：
 - 是否显示标题和副标题
 - 是否允许内嵌页面内搜索（关闭则跳转主页）
-- 是否显示 GLM-4 摘要
+- 是否显示 Remo智能体摘要
 - 是否显示锐机热搜专家（依赖内嵌搜索能力，关闭内嵌搜索时自动隐藏）
 - 是否显示许可证信息
 - 是否显示版本号
@@ -93,7 +96,7 @@
 | 状态 | Zustand 5 |
 | 路由 | React Router 7 |
 | Markdown | react-markdown + remark-gfm |
-| AI | GLM-4-Flash（智谱 BigModel） |
+| AI | Remo智能体（语言能力基于 GLM-4-Flash / 智谱 BigModel） |
 | 搜索 | AnySearch API |
 | 热搜数据 | RejHotSearchDB（GitHub Raw / gh-proxy / jsDelivr 四节点自动测速） |
 | 部署 | Netlify（含边缘代理与 SPA 回退） |
@@ -131,7 +134,7 @@ src/
 │   ├── SearchResults.tsx      # 结果列表、详情、AI 概括、Markdown 渲染
 │   ├── ChatMode.tsx           # AI 自搜模式（单次会话：多轮搜索 + 流式回答 + 步骤展开）
 │   ├── HotSearchExpert.tsx    # 锐机热搜专家（日期/时间点选择 + 平台榜单 + 进入检索工作流）
-│   ├── LicenseButton.tsx      # 许可证按钮与 GLM 解析弹窗
+│   ├── LicenseButton.tsx      # 许可证按钮与 Remo智能体解析弹窗
 │   ├── Watermark.tsx          # 斜向重复文字水印组件（AI 生成内容合规标识）
 │   └── ThemeToggle.tsx        # 三态主题切换按钮
 ├── pages/
@@ -139,11 +142,11 @@ src/
 │   ├── Ask.tsx                # 精简搜索页（?s= 自动搜索）
 │   └── Embed.tsx              # 内嵌页（URL 参数配置 + 搜索/热搜标签切换）
 ├── store/
-│   ├── searchStore.ts         # 搜索状态（结果、历史、GLM 摘要流式）
+│   ├── searchStore.ts         # 搜索状态（结果、历史、AI 摘要流式）
 │   └── themeStore.ts          # 主题状态（light/dark/auto + 系统监听）
 ├── lib/
 │   ├── anysearch.ts           # AnySearch API 客户端（含 tag 重试）
-│   ├── glm.ts                 # GLM-4-Flash 流式调用（概括/许可证/自搜对话，支持 AbortSignal）
+│   ├── glm.ts                 # Remo智能体客户端（GLM-4-Flash 流式调用，支持 AbortSignal）
 │   ├── hotsearch.ts           # RejHotSearchDB 客户端（索引/归档、三数据源回退、归档缓存）
 │   └── embedConfig.ts         # 内嵌配置解析与 URL 生成
 ├── App.tsx                    # 路由配置
@@ -183,7 +186,7 @@ src/
 - 开发环境：Vite dev server proxy；生产环境：Netlify 边缘代理（见 `public/_redirects`）
 - 归档保留最近 30 天，由数据仓库的 GitHub Actions 每小时抓取并重建索引
 
-### GLM-4-Flash
+### Remo智能体（语言能力基于 GLM-4-Flash）
 - 端点：`/api/glm/chat/completions`（同源代理）→ `https://open.bigmodel.cn/api/paas/v4/chat/completions`
 - 模型：`glm-4-flash`
 - 参数：`temperature: 0.3`，`max_tokens: 1200`，`stream: true`
@@ -220,7 +223,7 @@ src/
 |------|------|
 | `title=false` | 隐藏标题与副标题 |
 | `search=false` | 禁用内嵌搜索（点击搜索跳转主页；同时自动隐藏热搜专家标签） |
-| `glm=false` | 隐藏 GLM-4 摘要 |
+| `glm=false` | 隐藏 Remo智能体摘要 |
 | `hotsearch=false` | 关闭热搜专家标签 |
 | `license=false` | 隐藏许可证按钮 |
 | `version=false` | 隐藏版本号 |

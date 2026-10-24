@@ -486,7 +486,7 @@ export function SearchResults({
           <div className="mb-4 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-2xl">
             <div className="flex items-center gap-2">
               <div className="w-4 h-4 border-2 border-gray-300 dark:border-gray-600 border-t-gray-600 dark:border-t-gray-300 rounded-full animate-spin" />
-              <span className="text-xs text-gray-500 dark:text-gray-400">GLM-4-Flash 正在解析...</span>
+              <span className="text-xs text-gray-500 dark:text-gray-400">Remo智能体正在解析...</span>
             </div>
           </div>
         )}
@@ -553,7 +553,7 @@ export function SearchResults({
                 )}
               </div>
               {isOverviewLoading && !overviewSummary ? (
-                <p className="text-sm text-gray-400 dark:text-gray-500">GLM-4-Flash 正在解析所有搜索结果...</p>
+                <p className="text-sm text-gray-400 dark:text-gray-500">Remo智能体正在解析所有搜索结果...</p>
               ) : (
                 <>
                   <p
@@ -719,7 +719,7 @@ export function SearchResults({
                 <div className="mb-4 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-2xl">
                   <div className="flex items-center gap-2">
                     <div className="w-4 h-4 border-2 border-gray-300 dark:border-gray-600 border-t-gray-600 dark:border-t-gray-300 rounded-full animate-spin" />
-                    <span className="text-xs text-gray-500 dark:text-gray-400">GLM-4-Flash 正在解析...</span>
+                    <span className="text-xs text-gray-500 dark:text-gray-400">Remo智能体正在解析...</span>
                   </div>
                 </div>
               )}

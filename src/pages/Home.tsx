@@ -9,11 +9,11 @@ import { type EmbedConfig, DEFAULT_EMBED_CONFIG, buildEmbedUrl } from '../lib/em
 import pkg from '../../package.json';
 
 const TOGGLE_OPTIONS: { key: keyof EmbedConfig; label: string; desc: string }[] = [
-  { key: 'showTitle', label: '标题和副标题', desc: '显示「锐机超级搜索」标题与副标题' },
+  { key: 'showTitle', label: '标题和副标题', desc: '显示「RemoSearch」标题与副标题' },
   { key: 'allowInlineSearch', label: '内嵌搜索', desc: '允许在内嵌页面内搜索（关闭则点击搜索跳转主页）' },
-  { key: 'showGLM', label: 'GLM-4 摘要', desc: 'AI 总体概括（含引用徽章）与单条结果详情摘要' },
+  { key: 'showGLM', label: 'Remo智能体摘要', desc: 'AI 总体概括（含引用徽章）与单条结果详情摘要' },
   { key: 'showHotSearch', label: '锐机热搜专家', desc: '按日期/时间点选择各平台热搜，点击词条直接进入检索工作流' },
-  { key: 'showLicense', label: '许可证信息', desc: '底部显示「本项目许可证」按钮（GLM 解析 GPLv3）' },
+  { key: 'showLicense', label: '许可证信息', desc: '底部显示「本项目许可证」按钮（Remo智能体解析 GPLv3）' },
   { key: 'showVersion', label: '版本号', desc: '底部显示当前版本号' },
 ];
 
@@ -47,9 +47,13 @@ export default function Home() {
     <div className="min-h-screen flex flex-col bg-white dark:bg-gray-900 transition-colors">
       {/* 顶部标题（不随模式切换变化） */}
       <div className="text-center pt-8 pb-2 px-4">
-        <h1 className="text-3xl font-semibold text-gray-800 dark:text-gray-100 mb-2">
-          锐机超级搜索v6
-        </h1>
+        <div className="mb-2 flex items-start justify-center gap-1.5">
+          <h1 className="text-3xl font-semibold text-gray-800 dark:text-gray-100">RemoSearch</h1>
+          {/* 上挂徽章：型号版本标识（挂在标题右上角） */}
+          <span className="mt-1 whitespace-nowrap rounded-full border border-blue-200/70 bg-blue-50 px-2 py-0.5 text-[10px] font-semibold leading-none text-blue-600 dark:border-blue-800/60 dark:bg-blue-900/40 dark:text-blue-300">
+            第七代搜索模型
+          </span>
+        </div>
         <p className="text-gray-500 dark:text-gray-400 text-sm">智能检索，发现世界</p>
       </div>
 

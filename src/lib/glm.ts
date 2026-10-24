@@ -391,7 +391,7 @@ export async function chatWithSearchStream(
   options?: { signal?: AbortSignal },
 ): Promise<string> {
   const systemPrompt =
-    '你是锐机超级搜索的 AI 自搜助手。用户提出问题，系统已根据用户需求自动执行了多次搜索。' +
+    '你是 RemoSearch 的 AI 自搜助手。用户提出问题，系统已根据用户需求自动执行了多次搜索。' +
     '请综合「参考搜索结果」进行回答，不要编造事实。若搜索结果不足以回答问题，请明确告知用户信息不足。' +
     '回答使用简洁的中文，可使用 Markdown 语法（代码块、行内代码、加粗、列表、表格等）提升可读性。' +
     '引用搜索结果时使用 [序号] 标注；同时引用多条时合并到一个方括号，例如 [1,2,3]。' +

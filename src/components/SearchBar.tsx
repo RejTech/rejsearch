@@ -109,9 +109,13 @@ export function SearchBar({
     <div className="w-full max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
       {showTitle && (
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-semibold text-gray-800 dark:text-gray-100 mb-2">
-            锐机超级搜索v6
-          </h1>
+          <div className="mb-2 flex items-start justify-center gap-1.5">
+            <h1 className="text-3xl font-semibold text-gray-800 dark:text-gray-100">RemoSearch</h1>
+            {/* 上挂徽章：型号版本标识（挂在标题右上角） */}
+            <span className="mt-1 whitespace-nowrap rounded-full border border-blue-200/70 bg-blue-50 px-2 py-0.5 text-[10px] font-semibold leading-none text-blue-600 dark:border-blue-800/60 dark:bg-blue-900/40 dark:text-blue-300">
+              第七代搜索模型
+            </span>
+          </div>
           <p className="text-gray-500 dark:text-gray-400 text-sm">智能检索，发现世界</p>
         </div>
       )}

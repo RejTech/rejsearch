@@ -237,7 +237,7 @@ export function ChatMode({
         err instanceof DOMException &&
         (err.name === 'AbortError' || err.message?.includes('aborted'));
       const fallbackContent = isAbort
-        ? acc || (timedOut ? '_（GLM 响应超时，请稍后重试）_' : '_（已停止）_')
+        ? acc || (timedOut ? '_（Remo智能体响应超时，请稍后重试）_' : '_（已停止）_')
         : `生成失败：${err instanceof Error ? err.message : '未知错误'}`;
 
       setMessages((prev) => {
