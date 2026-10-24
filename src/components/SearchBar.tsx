@@ -82,8 +82,8 @@ export function SearchBar({
     if (q) {
       setQuery(q);
       handleSearch(q);
-      // 清除 URL 中的参数，避免刷新时重复搜索
-      window.history.replaceState({}, '', window.location.pathname);
+      // 清除 URL 中的参数，避免刷新时重复搜索（保留 #hash 模式标识）
+      window.history.replaceState({}, '', `${window.location.pathname}${window.location.hash}`);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

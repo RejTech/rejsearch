@@ -184,7 +184,7 @@ export function FollowUpBar({
   if (!hasResults) return null;
 
   return (
-    <div className="fixed inset-x-0 bottom-[calc(max(0.75rem,env(safe-area-inset-bottom))+4.5rem)] z-30 px-4">
+    <div className="fixed inset-x-0 bottom-[calc(max(0.75rem,env(safe-area-inset-bottom))+var(--wap-nav-h,4.5rem))] z-30 px-4">
       {open ? (
         /* 追问栏：32px 圆角容器，收起按钮独占一栏（17px+15px 半径同心），输入胶囊 10px+22px 同心 */
         <div className="liquid-glass animate-sheet-up relative mx-auto max-w-md rounded-[32px] p-2.5">

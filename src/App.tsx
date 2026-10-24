@@ -18,11 +18,12 @@ function DeviceGate() {
     if (new URLSearchParams(location.search).has('force')) return;
     const mobile = isMobileDevice();
     if (mobile && location.pathname === '/') {
-      navigate('/wap', { replace: true });
+      // 保留 hash（如内嵌宿主用 /#hot 直达热搜页）
+      navigate(`/wap${location.hash}`, { replace: true });
     } else if (!mobile && location.pathname === '/wap') {
       navigate('/', { replace: true });
     }
-  }, [location.pathname, location.search, navigate]);
+  }, [location.pathname, location.hash, location.search, navigate]);
 
   return null;
 }
