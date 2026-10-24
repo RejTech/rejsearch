@@ -84,6 +84,29 @@ export default function Wap() {
         {mode === 'search' && (
           <>
             <SearchBar showTitle={false} />
+            {/* 下载通知：仅非内嵌（非 RWACore）访问时展示，内嵌宿主已有原生入口 */}
+            {!embed && (
+              <div className="mx-auto mt-4 w-full max-w-3xl px-4 sm:px-6">
+                <a
+                  href="https://pan.quark.cn/s/442024c98fac"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="liquid-glass flex items-center justify-between gap-3 rounded-2xl px-4 py-3 transition-colors hover:bg-white/70 dark:hover:bg-gray-700/50"
+                >
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-gray-800 dark:text-gray-100">
+                      推荐下载 RemoSearch App
+                    </p>
+                    <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+                      移动端体验更佳，点击前往下载
+                    </p>
+                  </div>
+                  <span className="shrink-0 rounded-full bg-gray-800 px-4 py-1.5 text-xs font-medium text-white dark:bg-gray-100 dark:text-gray-900">
+                    点击下载
+                  </span>
+                </a>
+              </div>
+            )}
             <SearchResults variant="wap" />
           </>
         )}
