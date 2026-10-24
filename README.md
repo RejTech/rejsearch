@@ -39,6 +39,7 @@
 - **WAP 自搜模式**：无顶部栏，消息区满宽玻璃气泡（AI 回复半透明白底 + 毛玻璃，用户深色气泡，浮入动画），搜索步骤折叠/引用徽章/水印保留；输入框为底部固定 LiquidGlass 单行药丸（透明输入 + 深色胶囊发送/停止，与底栏同构），「清空对话」为右上角小胶囊；消息随页面流滚动
 - **同心圆角**：WAP 弹层（下拉面板等）容器圆角与内部胶囊/气泡按同心圆规则取值（容器 32px = 内边距 + 内层 20~22px 胶囊圆角），圆弧共用圆心
 - **热搜折叠弹窗**：WAP 热搜专家中各平台默认折叠为一行卡片，卡片中部为 **AI（GLM）整榜一句话概览**（涉及哪些圈子/产品/人物，带「AI」小徽标，失败自动回退为「首条标题 等 N 条」）；点击后以底部弹窗（bottom sheet）展开该平台完整榜单，点击词条直接进入检索工作流；桌面端保持双列卡片形态
+- **安卓 App 内嵌支持**：UA 含 `RWACore` 时判定为内嵌宿主，**隐藏底部标签栏**（宿主 App 自带导航），并把底栏占位归零让置底输入/追问栏自动贴底；页面模式由 **`#hash` 切换**（`#search` / `#chat` / `#hot`，兼容 `#/hot`）——宿主改 `location.hash` 即切页，站内切换也会把当前模式写回 hash 供宿主读取；`/#hot` 可直接深链到热搜页（跳转 `/wap` 时保留 hash）
 
 ### AI 追问（v6 恢复）
 - 搜索/热搜检索结果生成完后可**基于当前结果多轮追问**：移动端为底栏上方「追问」药丸（点击展开追问栏），桌面端为「AI 总体概括」卡右上角「AI 追问」按钮（打开居中模态）
@@ -183,10 +184,10 @@ src/
 - 归档保留最近 30 天，由数据仓库的 GitHub Actions 每小时抓取并重建索引
 
 ### GLM-4-Flash
-- 端点：`https://open.bigmodel.cn/api/paas/v4/chat/completions`
+- 端点：`/api/glm/chat/completions`（同源代理）→ `https://open.bigmodel.cn/api/paas/v4/chat/completions`
 - 模型：`glm-4-flash`
 - 参数：`temperature: 0.3`，`max_tokens: 1200`，`stream: true`
-- 支持 CORS，前端直连
+- **必须走同源代理**：智谱 API 的 CORS 预检（OPTIONS）不返回 `Access-Control-Allow-Origin`，浏览器直连会被拦截（`Failed to fetch`）；开发用 Vite 代理，生产用 Netlify 边缘代理（与 AnySearch 同机制）
 - 流式调用支持 `AbortSignal` 中断；首响应 60 秒超时自动失败
 
 ### Netlify 部署
@@ -194,6 +195,7 @@ src/
 - 发布目录：`dist`
 - `public/_redirects` 配置：
   - `/api/anysearch/*` → 代理到 AnySearch API（状态码 200）
+  - `/api/glm/*` → 代理到智谱 GLM API（状态码 200，同样用于绕过 CORS 预检问题）
   - `/api/hotsearch-raw/*`、`/api/hotsearch-ghproxy/*`、`/api/hotsearch-gcore/*` → 代理到热搜库三个加速节点（状态码 200），由前端按「索引新鲜度优先、延迟次之」自动选路
   - `/*` → 回退到 `index.html`（SPA 路由）
 

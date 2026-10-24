@@ -2,6 +2,19 @@
 
 本文档详细记录了项目近期的核心功能迭代与技术优化。
 
+## v6（α.26.1001.21）
+
+### ✨ 新功能 (Features)
+
+#### 1. WAP 安卓 App 内嵌支持
+- UA 含 **RWACore** 判定为内嵌宿主：隐藏底部标签栏、底栏占位归零（置底输入药丸/追问栏自动贴底），宿主 App 自带导航；此类 UA 同时视为移动设备，访问主页自动进入 `/wap`。
+- **`#hash` 切页**：`#search` / `#chat` / `#hot`（兼容 `#/hot`）。宿主修改 `location.hash` 即切换模式；站内切换模式会同步写回 hash（`replaceState`，不产生历史记录）供宿主读取；`/#hot` 深链进入 `/wap` 时保留 hash。
+
+#### 2. 修复 AI 全部不可用（GLM 同源代理）
+- 现象：AI 自搜 / 总体概括 / 热搜整榜概览 / 追问全部报「生成失败：Failed to fetch」，控制台 `net::ERR_FAILED https://open.bigmodel.cn/...`。
+- 排查：命令行直连 POST 正常（200），网络可达（`no-cors` 请求成功），GitHub API 跨域正常；但智谱 API 的 **CORS 预检 OPTIONS 不返回 `Access-Control-Allow-Origin`**（实际 POST 才返回）→ 浏览器预检失败，全站 AI 被拦。
+- 修复：GLM 改走同源代理 `/api/glm/*` → `https://open.bigmodel.cn/api/paas/v4/*`（开发：Vite 代理；生产：Netlify `_redirects` 边缘代理，与 `/api/anysearch` 同机制），彻底绕开预检，流式输出不受影响。
+
 ## v6（α.26.1001.20）
 
 ### ✨ 新功能 (Features)

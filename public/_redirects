@@ -2,6 +2,9 @@
 # 状态码 200 = 代理（非跳转），浏览器视为同源
 /api/anysearch/*  https://api.anysearch.com/:splat  200
 
+# 智谱 GLM（其 CORS 预检不返回 ACAO，浏览器直连必被拦）→ 同源代理
+/api/glm/*  https://open.bigmodel.cn/api/paas/v4/:splat  200
+
 # 锐机热搜库（RejHotSearchDB）同源加速节点，前端自动测速选择最快节点
 # GitHub Raw 直连
 /api/hotsearch-raw/*      https://raw.githubusercontent.com/RejTech/RejHotSearchDB/main/archives/:splat  200

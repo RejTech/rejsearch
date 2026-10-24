@@ -10,7 +10,7 @@ const EMBED_APP_UA = /RWACore/i;
 
 /** 当前是否运行在内嵌宿主 App 中 */
 export function isEmbedApp(): boolean {
-  return true; // TEMP-EMBED-TEST
+  return EMBED_APP_UA.test(navigator.userAgent);
 }
 
 /**

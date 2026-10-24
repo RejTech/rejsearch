@@ -25,6 +25,12 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api\/anysearch/, ''),
       },
+      // 智谱 GLM（CORS 预检失效，必须走同源代理；支持 SSE 流式透传）
+      '/api/glm': {
+        target: 'https://open.bigmodel.cn/api/paas/v4',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/glm/, ''),
+      },
       // 锐机热搜库（RejHotSearchDB）同源加速节点。
       // 注意：Vite 代理按 startsWith(context) 匹配，各路径不能互为前缀，
       // 因此统一使用 /api/hotsearch-<name> 命名，由前端自动测速后选择最快节点。

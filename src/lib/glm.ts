@@ -1,7 +1,9 @@
 import { SearchResult } from './anysearch';
 
 const GLM_API_KEY = '838b59bb70234f5dbbff4748e6b58714.y6IBHlQe8RHw2gOA';
-const GLM_API_URL = 'https://open.bigmodel.cn/api/paas/v4/chat/completions';
+// 智谱 API 的 CORS 预检（OPTIONS）不返回 Access-Control-Allow-Origin，浏览器直连会被拦截，
+// 统一走同源路径 /api/glm（开发：Vite 代理；生产：Netlify 边缘代理，与 /api/anysearch 同机制）
+const GLM_API_URL = '/api/glm/chat/completions';
 
 interface ChatMessage {
   role: 'system' | 'user' | 'assistant';
