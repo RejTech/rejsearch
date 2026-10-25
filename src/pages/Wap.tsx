@@ -117,7 +117,7 @@ export default function Wap() {
                   </p>
                 </div>
                 <span className="shrink-0 rounded-full bg-gray-800 px-4 py-1.5 text-xs font-medium text-white dark:bg-gray-100 dark:text-gray-900">
-                  立即更新
+                  立即下载新版安装包
                 </span>
               </a>
               <button

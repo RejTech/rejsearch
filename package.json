@@ -1,8 +1,8 @@
 {
   "name": "rejsearch",
   "private": true,
-  "version": "α.26.1025.01",
-  "apkVersion": "2026.10.25.0738",
+  "version": "α.26.1025.10",
+  "apkVersion": "2026.10.25.0802",
   "type": "module",
   "scripts": {
     "dev": "vite",

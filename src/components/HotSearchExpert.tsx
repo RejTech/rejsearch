@@ -4,6 +4,7 @@ import { search } from '../lib/anysearch';
 import { categorizeHotSearch, summarizeOverview, summarizePlatformBrief, type HotSearchCategory, type HotSearchCategoryEntry } from '../lib/glm';
 import { SearchResults } from './SearchResults';
 import { ActionStatusBadge } from './ActionStatusBadge';
+import { isEmbedApp } from '../lib/utils';
 import {
   PLATFORM_META,
   PLATFORM_ID_PREFIX,
@@ -790,7 +791,8 @@ export function HotSearchExpert({ showGLM = true, variant = 'desktop' }: HotSear
                     >
                       刷新数据
                     </button>
-                    {/* 下载原始 JSON：索引 / 当前选中日期时间点的归档 */}
+                    {/* 下载原始 JSON：索引 / 当前选中日期时间点的归档（RWACore 内嵌宿主无下载管理器，隐藏） */}
+                    {!isEmbedApp() && (
                     <div className="grid grid-cols-2 gap-2">
                       <button
                         onClick={() => indexRef.current && downloadJson(indexRef.current, 'index.json')}
@@ -807,6 +809,7 @@ export function HotSearchExpert({ showGLM = true, variant = 'desktop' }: HotSear
                         下载本期
                       </button>
                     </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -882,7 +885,9 @@ export function HotSearchExpert({ showGLM = true, variant = 'desktop' }: HotSear
             </button>
             {/* GitHub Actions 数据抓取实时状态（紧凑徽章，点击跳转运行页） */}
             <ActionStatusBadge variant="inline" />
-            {/* 下载原始 JSON：索引 / 当前日期时间点归档 */}
+            {/* 下载原始 JSON：索引 / 当前日期时间点归档（RWACore 内嵌宿主无下载管理器，隐藏） */}
+            {!isEmbedApp() && (
+            <>
             <button
               onClick={() => indexRef.current && downloadJson(indexRef.current, 'index.json')}
               disabled={indexLoading || !indexRef.current}
@@ -897,6 +902,8 @@ export function HotSearchExpert({ showGLM = true, variant = 'desktop' }: HotSear
             >
               下载本期
             </button>
+            </>
+            )}
           </div>
           <p className="text-center text-xs text-gray-400 dark:text-gray-500 mb-6">
             选择日期与时间点查看各平台热搜榜，点击热搜词条即可进入检索工作流
