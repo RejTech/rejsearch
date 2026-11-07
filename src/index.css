@@ -139,19 +139,19 @@ html.dark ::-webkit-scrollbar-thumb:hover {
 @keyframes toast-pop {
   0% {
     opacity: 0;
-    transform: translate(-50%, 6px) scale(0.96);
+    transform: translateY(6px) scale(0.96);
   }
   5% {
     opacity: 1;
-    transform: translate(-50%, 0) scale(1);
+    transform: translateY(0) scale(1);
   }
   90% {
     opacity: 1;
-    transform: translate(-50%, 0) scale(1);
+    transform: translateY(0) scale(1);
   }
   100% {
     opacity: 0;
-    transform: translate(-50%, 6px) scale(0.98);
+    transform: translateY(6px) scale(0.98);
   }
 }
 

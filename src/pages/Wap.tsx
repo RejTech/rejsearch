@@ -59,8 +59,8 @@ export default function Wap() {
   const [updateDismissed, setUpdateDismissed] = useState(false);
   /** 下载卡片下拉菜单：App 专属功能列表展开状态 */
   const [featuresOpen, setFeaturesOpen] = useState(false);
-  /** RWACore 识别提示：每次进入页面显示一次（站内切模式不重复，刷新/重进再显示） */
-  const [rwacoreToast, setRwacoreToast] = useState(embed);
+  /** RWACore 识别提示：仅在以搜索（主页）进入时显示一次；站内切模式不重复，刷新/重进再显示 */
+  const [rwacoreToast, setRwacoreToast] = useState(embed && (parseHashMode() ?? 'search') === 'search');
   const showUpdateBanner = embed && !updateDismissed && uaVersion !== __APK_VERSION__ && !!latestApkUrl;
 
   useEffect(() => {
@@ -111,13 +111,13 @@ export default function Wap() {
         } as CSSProperties
       }
     >
-      {/* RWACore 识别提示：3 秒小 pop，贴底单行（站内切模式不重复，刷新重进再显示） */}
+      {/* RWACore 识别提示：3 秒小 pop，贴底满页宽（填满一行才换行，完整显示文字） */}
       {rwacoreToast && (
         <div
           role="status"
-          className="animate-toast-pop pointer-events-none fixed bottom-[calc(var(--wap-safe-bottom,env(safe-area-inset-bottom))+0.75rem)] left-1/2 z-[60] max-w-[calc(100vw-1rem)]"
+          className="animate-toast-pop pointer-events-none fixed inset-x-3 bottom-[calc(var(--wap-safe-bottom,env(safe-area-inset-bottom))+0.75rem)] z-[60]"
         >
-          <div className="liquid-glass max-w-full truncate whitespace-nowrap rounded-full px-3.5 py-2 text-[11px] leading-none text-gray-700 shadow-lg dark:text-gray-200">
+          <div className="liquid-glass w-full rounded-2xl px-4 py-2 text-center text-[11px] leading-relaxed text-gray-700 shadow-lg dark:text-gray-200">
             检测到 RWACore{uaVersion ? ` 版本 ${uaVersion}` : ''}，为您提供专享服务
           </div>
         </div>
