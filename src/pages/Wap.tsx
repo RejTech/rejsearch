@@ -28,7 +28,7 @@ const MODES: { key: WapMode; label: string }[] = [
   { key: 'hot', label: '热搜' },
 ];
 
-/** RemoSearch App 独家功能（下载卡片下拉菜单展示） */
+/** RemoSearch App 专属功能（下载卡片下拉菜单展示） */
 const APP_FEATURES: { title: string; desc: string }[] = [
   { title: '热搜 AI 语义归类', desc: '把全平台热搜自动整理成主题板块，一眼看清今天在聊什么（仅 App 内可用）' },
   { title: '版本自动提醒', desc: '打开即检测最新安装包，不错过任何一次更新与修复' },
@@ -166,14 +166,14 @@ export default function Wap() {
                         点击下载
                       </span>
                     </a>
-                    {/* 下拉开关：展开 App 独家功能（与下载热区分开，避免误触下载） */}
+                    {/* 下拉开关：展开 App 专属功能（与下载热区分开，避免误触下载） */}
                     <button
                       onClick={() => setFeaturesOpen((v) => !v)}
-                      aria-label={featuresOpen ? '收起 App 独家功能' : '查看 App 独家功能'}
+                      aria-label={featuresOpen ? '收起 App 专属功能' : '查看 App 专属功能'}
                       aria-expanded={featuresOpen}
                       className="flex shrink-0 items-center gap-1 rounded-full px-2.5 py-2 text-xs text-gray-500 transition-colors hover:bg-white/70 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-700/50 dark:hover:text-gray-200"
                     >
-                      <span>独家功能</span>
+                      <span>App 专属</span>
                       <svg
                         viewBox="0 0 24 24"
                         fill="none"
@@ -190,7 +190,7 @@ export default function Wap() {
                   {featuresOpen && (
                     <div className="animate-panel-in border-t border-gray-200/60 px-4 pb-3.5 pt-3 dark:border-gray-700/60">
                       <p className="text-[11px] font-medium text-gray-400 dark:text-gray-500">
-                        SearchApp 独家功能
+                        App 专属功能
                       </p>
                       <ul className="mt-2 space-y-2">
                         {APP_FEATURES.map((feature, idx) => (
