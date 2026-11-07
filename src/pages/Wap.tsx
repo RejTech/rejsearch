@@ -32,7 +32,7 @@ const MODES: { key: WapMode; label: string }[] = [
 const APP_FEATURES: { title: string; desc: string }[] = [
   { title: '热搜 AI 语义归类', desc: '把全平台热搜自动整理成主题板块，一眼看清今天在聊什么（仅 App 内可用）' },
   { title: '版本自动提醒', desc: '打开即检测最新安装包，不错过任何一次更新与修复' },
-  { title: '沉浸式全屏体验', desc: '隐藏底部标签栏、自动贴合状态栏与安全区，内容铺满整屏' },
+  { title: '流畅应用体验', desc: '原生容器渲染，页面切换与滚动更顺滑，内容随安全区自动铺满整屏' },
 ];
 
 /** 解析 #search / #chat / #hot（兼容 #/hot 写法），非法值返回 null */
