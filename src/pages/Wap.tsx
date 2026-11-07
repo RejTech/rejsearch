@@ -33,6 +33,7 @@ const APP_FEATURES: { title: string; desc: string }[] = [
   { title: '热搜 AI 语义归类', desc: '把全平台热搜自动整理成主题板块，一眼看清今天在聊什么（仅 App 内可用）' },
   { title: '版本自动提醒', desc: '打开即检测最新安装包，不错过任何一次更新与修复' },
   { title: '流畅应用体验', desc: '原生容器渲染，页面切换与滚动更顺滑，内容随安全区自动铺满整屏' },
+  { title: '毛玻璃界面质感', desc: '半透明模糊的玻璃面板与悬浮栏，层次更轻盈（仅 App 内启用）' },
 ];
 
 /** 解析 #search / #chat / #hot（兼容 #/hot 写法），非法值返回 null */

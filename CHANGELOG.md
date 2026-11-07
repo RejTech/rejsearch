@@ -12,10 +12,11 @@
 - WAP 端检测：UA 含 RWACore 且其后跟随的版本号（支持 `RWACore/x.y.z` 与 `RWACore x.y.z` 形态）与 `apkVersion` 不一致时（含旧版宿主未携带版本号），内容区顶部显示「发现新版本」轻量横幅（与下载卡片同款 liquid-glass 样式，不遮挡操作）——展示最新/当前版本号，点击横幅直链下载最新 APK（下载文件名随 apkVersion 动态生成），右侧 × 可忽略。
 - APK 直链由 `import.meta.glob` 按 `_v<apkVersion>_` 自动定位 `src/assets/apks` 下的安装包，发版只需替换文件 + 改 package.json 一行；目录无 APK 时下载卡片与更新横幅自动隐藏。
 - RWACore 内嵌时隐藏热搜高级选项中的「下载索引」「下载本期」按钮（宿主无下载管理器）。
+- 毛玻璃（liquid-glass / glass-surface）改为 RWACore 独占：`main.tsx` 在 UA 含 RWACore 时给 `<html>` 加 `embed-app` 类，仅在 `html.embed-app` 下启用 `backdrop-filter` 与半透明背景；普通浏览器直接访问统一为不透明实色（白 / 深色 #111827），无模糊开销。
 
 #### 2.1 WAP 下载卡片：App 专属功能下拉菜单
 
-- 「推荐下载 RemoSearch App」卡片右侧新增「App 专属」下拉开关（与下载热区分开防误触），展开后以浅蓝圆形序号列出 3 项 App 专属能力：热搜 AI 语义归类、版本自动提醒、流畅应用体验；沿用 `animate-panel-in` 动画与同款 liquid-glass 圆角卡片，390px 窄屏无溢出，深浅色模式均适配。
+- 「推荐下载 RemoSearch App」卡片右侧新增「App 专属」下拉开关（与下载热区分开防误触），展开后以浅蓝圆形序号列出 4 项 App 专属能力：热搜 AI 语义归类、版本自动提醒、流畅应用体验、毛玻璃界面质感；沿用 `animate-panel-in` 动画与同款 liquid-glass 圆角卡片，390px 窄屏无溢出，深浅色模式均适配。
 
 #### 3. 热搜专家：AI 内容分类板块（桌面 + WAP）
 - 榜单就绪后对当期**全平台热搜词条**做语义归类（`categorizeHotSearch`）：本地关键词分类法瞬时完成分组，板块标题与 30-60 字内容摘要由 Remo智能体（GLM-4-Flash）并发生成（点名代表性事件/人物/产品）。
