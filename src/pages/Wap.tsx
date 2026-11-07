@@ -28,6 +28,13 @@ const MODES: { key: WapMode; label: string }[] = [
   { key: 'hot', label: '热搜' },
 ];
 
+/** RemoSearch App 独家功能（下载卡片下拉菜单展示） */
+const APP_FEATURES: { title: string; desc: string }[] = [
+  { title: '热搜 AI 语义归类', desc: '把全平台热搜自动整理成主题板块，一眼看清今天在聊什么（仅 App 内可用）' },
+  { title: '版本自动提醒', desc: '打开即检测最新安装包，不错过任何一次更新与修复' },
+  { title: '沉浸式全屏体验', desc: '隐藏底部标签栏、自动贴合状态栏与安全区，内容铺满整屏' },
+];
+
 /** 解析 #search / #chat / #hot（兼容 #/hot 写法），非法值返回 null */
 function parseHashMode(): WapMode | null {
   const raw = window.location.hash.replace(/^#\/?/, '').toLowerCase();
@@ -49,6 +56,8 @@ export default function Wap() {
   // RWACore UA 版本与最新 apkVersion 不一致（含旧版宿主未携带版本号）→ 顶部轻量更新横幅
   const [uaVersion] = useState(getEmbedAppUaVersion);
   const [updateDismissed, setUpdateDismissed] = useState(false);
+  /** 下载卡片下拉菜单：App 独家功能列表展开状态 */
+  const [featuresOpen, setFeaturesOpen] = useState(false);
   const showUpdateBanner = embed && !updateDismissed && uaVersion !== __APK_VERSION__ && !!latestApkUrl;
 
   // 切换模式：播放 lift 音效（点击当前已选模式不响）
@@ -138,23 +147,71 @@ export default function Wap() {
             {/* 下载通知：仅非内嵌（非 RWACore）访问时展示，内嵌宿主已有原生入口 */}
             {!embed && latestApkUrl && (
               <div className="mx-auto mt-4 w-full max-w-3xl px-4 sm:px-6">
-                <a
-                  href={latestApkUrl}
-                  download={`RemoSearchApp_v${__APK_VERSION__}.apk`}
-                  className="liquid-glass flex items-center justify-between gap-3 rounded-2xl px-4 py-3 transition-colors hover:bg-white/70 dark:hover:bg-gray-700/50"
-                >
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium text-gray-800 dark:text-gray-100">
-                      推荐下载 RemoSearch App
-                    </p>
-                    <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
-                      移动端体验更佳，点击前往下载
-                    </p>
+                <div className="liquid-glass overflow-hidden rounded-2xl">
+                  <div className="flex items-center gap-1 pr-2">
+                    <a
+                      href={latestApkUrl}
+                      download={`RemoSearchApp_v${__APK_VERSION__}.apk`}
+                      className="flex min-w-0 flex-1 items-center justify-between gap-3 rounded-2xl px-4 py-3 transition-colors hover:bg-white/70 dark:hover:bg-gray-700/50"
+                    >
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-gray-800 dark:text-gray-100">
+                          推荐下载 RemoSearch App
+                        </p>
+                        <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+                          移动端体验更佳，点击前往下载
+                        </p>
+                      </div>
+                      <span className="shrink-0 rounded-full bg-gray-800 px-4 py-1.5 text-xs font-medium text-white dark:bg-gray-100 dark:text-gray-900">
+                        点击下载
+                      </span>
+                    </a>
+                    {/* 下拉开关：展开 App 独家功能（与下载热区分开，避免误触下载） */}
+                    <button
+                      onClick={() => setFeaturesOpen((v) => !v)}
+                      aria-label={featuresOpen ? '收起 App 独家功能' : '查看 App 独家功能'}
+                      aria-expanded={featuresOpen}
+                      className="flex shrink-0 items-center gap-1 rounded-full px-2.5 py-2 text-xs text-gray-500 transition-colors hover:bg-white/70 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-700/50 dark:hover:text-gray-200"
+                    >
+                      <span>独家功能</span>
+                      <svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        className={`h-3.5 w-3.5 transition-transform ${featuresOpen ? 'rotate-180' : ''}`}
+                      >
+                        <path d="m6 9 6 6 6-6" />
+                      </svg>
+                    </button>
                   </div>
-                  <span className="shrink-0 rounded-full bg-gray-800 px-4 py-1.5 text-xs font-medium text-white dark:bg-gray-100 dark:text-gray-900">
-                    点击下载
-                  </span>
-                </a>
+                  {featuresOpen && (
+                    <div className="animate-panel-in border-t border-gray-200/60 px-4 pb-3.5 pt-3 dark:border-gray-700/60">
+                      <p className="text-[11px] font-medium text-gray-400 dark:text-gray-500">
+                        SearchApp 独家功能
+                      </p>
+                      <ul className="mt-2 space-y-2">
+                        {APP_FEATURES.map((feature, idx) => (
+                          <li key={feature.title} className="flex items-start gap-2.5">
+                            <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-blue-100 text-[11px] font-medium text-blue-600 dark:bg-blue-900/60 dark:text-blue-300">
+                              {idx + 1}
+                            </span>
+                            <div className="min-w-0">
+                              <p className="text-xs font-medium text-gray-800 dark:text-gray-100">
+                                {feature.title}
+                              </p>
+                              <p className="mt-0.5 text-[11px] leading-relaxed text-gray-500 dark:text-gray-400">
+                                {feature.desc}
+                              </p>
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
             <SearchResults variant="wap" />

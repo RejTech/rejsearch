@@ -60,6 +60,10 @@ function buildCategoryEntries(archive: HotSearchArchive): HotSearchCategoryEntry
 }
 
 export function HotSearchExpert({ showGLM = true, variant = 'desktop' }: HotSearchExpertProps = {}) {
+  /** RWACore 专属能力（热搜语义归类）开关：仅内嵌宿主生成分类板块，普通浏览器直接展示原始榜单 */
+  const embedApp = isEmbedApp();
+  /** 是否生成语义分类板块（RWACore + Remo智能体可用） */
+  const canCategorize = showGLM && embedApp;
   const {
     setQuery,
     setResults,
@@ -101,7 +105,7 @@ export function HotSearchExpert({ showGLM = true, variant = 'desktop' }: HotSear
   /** WAP 榜单视图：当前展开的顶部悬浮面板（null=全部收起） */
   const [wapPanel, setWapPanel] = useState<'time' | 'advanced' | null>(null);
 
-  // AI 分类板块（全平台热搜语义归类，双端一致）
+  // AI 分类板块（全平台热搜语义归类，RWACore 专属，桌面与 WAP 内嵌形态均生效）
   const [categories, setCategories] = useState<HotSearchCategory[] | null>(null);
   const [categoriesLoading, setCategoriesLoading] = useState(false);
   const [categoriesFailed, setCategoriesFailed] = useState(false);
@@ -109,8 +113,8 @@ export function HotSearchExpert({ showGLM = true, variant = 'desktop' }: HotSear
   const [expandedCategories, setExpandedCategories] = useState<Set<number>>(new Set());
   /** 板块内词条超出 CATEGORY_PREVIEW_COUNT 时的「展开全部」状态 */
   const [categoryShowAll, setCategoryShowAll] = useState<Set<number>>(new Set());
-  /** 「详细热搜情况」胶囊：原始平台榜单默认折叠，点击展开 */
-  const [detailExpanded, setDetailExpanded] = useState(false);
+  /** 「详细热搜情况」胶囊：RWACore 内原始榜单默认折叠；普通浏览器无分类板块，直接展开 */
+  const [detailExpanded, setDetailExpanded] = useState(!canCategorize);
 
   /** 词条 ID → 平台与条目（分类板块渲染与点击进入工作流用） */
   const itemLookup = useMemo(() => {
@@ -178,19 +182,19 @@ export function HotSearchExpert({ showGLM = true, variant = 'desktop' }: HotSear
       });
   }, []);
 
-  // 榜单就绪后异步生成 AI 分类板块（不阻塞榜单浏览；GLM 关闭时跳过并直接展开详细榜单）
+  // 榜单就绪后异步生成 AI 分类板块（RWACore 专属；普通浏览器或 GLM 关闭时跳过并直接展开原始榜单）
   useEffect(() => {
     setCategories(null);
     setCategoriesFailed(false);
     setExpandedCategories(new Set());
     setCategoryShowAll(new Set());
-    setDetailExpanded(!showGLM);
-    if (!archive || !showGLM) {
+    setDetailExpanded(!canCategorize);
+    if (!archive || !canCategorize) {
       setCategoriesLoading(false);
       return;
     }
     runCategorize(archive, false);
-  }, [archive, showGLM, runCategorize]);
+  }, [archive, canCategorize, runCategorize]);
 
   /** 单条热搜条目渲染（桌面卡片与 WAP 弹窗共用），外层 li 由调用方包裹 */
   const renderHotItem = (item: HotSearchItem, key: HotSearchPlatform, name: string) => {
@@ -792,7 +796,7 @@ export function HotSearchExpert({ showGLM = true, variant = 'desktop' }: HotSear
                       刷新数据
                     </button>
                     {/* 下载原始 JSON：索引 / 当前选中日期时间点的归档（RWACore 内嵌宿主无下载管理器，隐藏） */}
-                    {!isEmbedApp() && (
+                    {!embedApp && (
                     <div className="grid grid-cols-2 gap-2">
                       <button
                         onClick={() => indexRef.current && downloadJson(indexRef.current, 'index.json')}
@@ -886,7 +890,7 @@ export function HotSearchExpert({ showGLM = true, variant = 'desktop' }: HotSear
             {/* GitHub Actions 数据抓取实时状态（紧凑徽章，点击跳转运行页） */}
             <ActionStatusBadge variant="inline" />
             {/* 下载原始 JSON：索引 / 当前日期时间点归档（RWACore 内嵌宿主无下载管理器，隐藏） */}
-            {!isEmbedApp() && (
+            {!embedApp && (
             <>
             <button
               onClick={() => indexRef.current && downloadJson(indexRef.current, 'index.json')}
@@ -989,8 +993,8 @@ export function HotSearchExpert({ showGLM = true, variant = 'desktop' }: HotSear
 
             return (
               <div className={variant === 'wap' ? 'pt-[calc(var(--wap-safe-top,env(safe-area-inset-top))+5rem)]' : ''}>
-                {/* AI 内容分类板块：全平台热搜语义归类（GLM 关闭时不生成，详细榜单默认展开） */}
-                {showGLM && (
+                {/* AI 内容分类板块：全平台热搜语义归类（RWACore 专属；GLM 关闭或普通浏览器时不生成，直接展示原始榜单） */}
+                {canCategorize && (
                   <div className="mb-5">
                     <div className="mb-2 flex items-center gap-2 px-1">
                       <span className="px-2.5 py-1 bg-blue-50 dark:bg-blue-900/40 text-blue-600 dark:text-blue-300 text-xs rounded-full font-medium">
@@ -1034,7 +1038,8 @@ export function HotSearchExpert({ showGLM = true, variant = 'desktop' }: HotSear
                   </div>
                 )}
 
-                {/* 详细热搜情况胶囊：原始平台榜单默认折叠收纳，点击展开查看完整列表 */}
+                {/* 详细热搜情况胶囊：RWACore 内将原始平台榜单折叠收纳，点击展开查看完整列表；普通浏览器直接平铺 */}
+                {canCategorize && (
                 <div className="flex justify-center">
                   <button
                     onClick={() => setDetailExpanded((v) => !v)}
@@ -1057,6 +1062,7 @@ export function HotSearchExpert({ showGLM = true, variant = 'desktop' }: HotSear
                     </svg>
                   </button>
                 </div>
+                )}
 
                 {detailExpanded && (
                   <div className="mt-4">
