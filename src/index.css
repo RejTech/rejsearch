@@ -135,6 +135,30 @@ html.dark ::-webkit-scrollbar-thumb:hover {
   animation: panel-in 0.24s cubic-bezier(0.32, 0.72, 0, 1);
 }
 
+/* 顶部小 pop 提示：1 秒内闪出后自动淡出（RWACore 识别提示等） */
+@keyframes toast-pop {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -6px) scale(0.96);
+  }
+  15% {
+    opacity: 1;
+    transform: translate(-50%, 0) scale(1);
+  }
+  75% {
+    opacity: 1;
+    transform: translate(-50%, 0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -6px) scale(0.98);
+  }
+}
+
+.animate-toast-pop {
+  animation: toast-pop 1s cubic-bezier(0.32, 0.72, 0, 1) both;
+}
+
 /* 胶囊 select：隐藏原生下拉箭头（贴边压圆角），改内嵌 chevron（右留 1rem 垂直居中），双主题适配 */
 .select-chevron {
   -webkit-appearance: none;

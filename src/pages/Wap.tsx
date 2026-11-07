@@ -57,9 +57,17 @@ export default function Wap() {
   // RWACore UA 版本与最新 apkVersion 不一致（含旧版宿主未携带版本号）→ 顶部轻量更新横幅
   const [uaVersion] = useState(getEmbedAppUaVersion);
   const [updateDismissed, setUpdateDismissed] = useState(false);
-  /** 下载卡片下拉菜单：App 独家功能列表展开状态 */
+  /** 下载卡片下拉菜单：App 专属功能列表展开状态 */
   const [featuresOpen, setFeaturesOpen] = useState(false);
+  /** RWACore 识别提示：每次进入页面显示一次（站内切模式不重复，刷新/重进再显示） */
+  const [rwacoreToast, setRwacoreToast] = useState(embed);
   const showUpdateBanner = embed && !updateDismissed && uaVersion !== __APK_VERSION__ && !!latestApkUrl;
+
+  useEffect(() => {
+    if (!rwacoreToast) return;
+    const timer = setTimeout(() => setRwacoreToast(false), 1000);
+    return () => clearTimeout(timer);
+  }, [rwacoreToast]);
 
   // 切换模式：播放 lift 音效（点击当前已选模式不响）
   const switchMode = (next: WapMode) => {
@@ -103,6 +111,17 @@ export default function Wap() {
         } as CSSProperties
       }
     >
+      {/* RWACore 识别提示：1 秒小 pop（站内切模式不重复，刷新重进再显示） */}
+      {rwacoreToast && (
+        <div
+          role="status"
+          className="animate-toast-pop pointer-events-none fixed left-1/2 top-[calc(var(--wap-safe-top,env(safe-area-inset-top))+0.75rem)] z-[60]"
+        >
+          <div className="liquid-glass max-w-[calc(100vw-2rem)] rounded-full px-4 py-2 text-center text-xs text-gray-700 shadow-lg dark:text-gray-200">
+            检测到 RWACore{uaVersion ? ` 版本 ${uaVersion}` : ''}，为您提供专享服务
+          </div>
+        </div>
+      )}
       {/* 内容区（三个模式复用原有组件，详情均为移动端弹窗形态） */}
       <main
         className={`relative px-3 pt-4 ${
