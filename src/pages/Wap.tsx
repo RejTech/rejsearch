@@ -65,7 +65,7 @@ export default function Wap() {
 
   useEffect(() => {
     if (!rwacoreToast) return;
-    const timer = setTimeout(() => setRwacoreToast(false), 1000);
+    const timer = setTimeout(() => setRwacoreToast(false), 3000);
     return () => clearTimeout(timer);
   }, [rwacoreToast]);
 
@@ -111,13 +111,13 @@ export default function Wap() {
         } as CSSProperties
       }
     >
-      {/* RWACore 识别提示：1 秒小 pop（站内切模式不重复，刷新重进再显示） */}
+      {/* RWACore 识别提示：3 秒小 pop，贴底单行（站内切模式不重复，刷新重进再显示） */}
       {rwacoreToast && (
         <div
           role="status"
-          className="animate-toast-pop pointer-events-none fixed left-1/2 top-[calc(var(--wap-safe-top,env(safe-area-inset-top))+0.75rem)] z-[60]"
+          className="animate-toast-pop pointer-events-none fixed bottom-[calc(var(--wap-safe-bottom,env(safe-area-inset-bottom))+0.75rem)] left-1/2 z-[60] max-w-[calc(100vw-1rem)]"
         >
-          <div className="liquid-glass max-w-[calc(100vw-2rem)] rounded-full px-4 py-2 text-center text-xs text-gray-700 shadow-lg dark:text-gray-200">
+          <div className="liquid-glass max-w-full truncate whitespace-nowrap rounded-full px-3.5 py-2 text-[11px] leading-none text-gray-700 shadow-lg dark:text-gray-200">
             检测到 RWACore{uaVersion ? ` 版本 ${uaVersion}` : ''}，为您提供专享服务
           </div>
         </div>

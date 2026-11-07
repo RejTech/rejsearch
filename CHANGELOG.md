@@ -13,6 +13,7 @@
 - APK 直链由 `import.meta.glob` 按 `_v<apkVersion>_` 自动定位 `src/assets/apks` 下的安装包，发版只需替换文件 + 改 package.json 一行；目录无 APK 时下载卡片与更新横幅自动隐藏。
 - RWACore 内嵌时隐藏热搜高级选项中的「下载索引」「下载本期」按钮（宿主无下载管理器）。
 - 毛玻璃（liquid-glass / glass-surface）改为 RWACore 独占：`main.tsx` 在 UA 含 RWACore 时给 `<html>` 加 `embed-app` 类，仅在 `html.embed-app` 下启用 `backdrop-filter` 与半透明背景；普通浏览器直接访问统一为不透明实色（白 / 深色 #111827），无模糊开销。
+- RWACore 识别提示：进入 WAP 页面时底部弹出单行小 pop「检测到 RWACore 版本 xxx，为您提供专享服务」，3 秒后自动淡出；站内切换模式不重复，刷新或重新进入页面再显示（贴底并避让安全区）。
 
 #### 2.1 WAP 下载卡片：App 专属功能下拉菜单
 
