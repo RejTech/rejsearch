@@ -1043,7 +1043,7 @@ export function HotSearchExpert({ showGLM = true, variant = 'desktop' }: HotSear
                 <div className="flex justify-center">
                   <button
                     onClick={() => setDetailExpanded((v) => !v)}
-                    className="inline-flex items-center gap-2 rounded-full border border-gray-200/70 dark:border-gray-700 bg-white/80 dark:bg-gray-800/70 backdrop-blur px-5 py-2.5 text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/60 transition-colors"
+                    className="glass-surface inline-flex items-center gap-2 rounded-full border border-gray-200/70 dark:border-gray-700 px-5 py-2.5 text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/60 transition-colors"
                   >
                     <span className="font-medium">详细热搜情况</span>
                     <span className="text-xs tabular-nums text-gray-400 dark:text-gray-500">

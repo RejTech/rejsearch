@@ -437,7 +437,7 @@ export function ChatMode({
                 className={`max-w-[88%] p-3 relative overflow-hidden ${
                   msg.role === 'user'
                     ? 'bg-gray-800 dark:bg-gray-100 text-white dark:text-gray-900 rounded-3xl'
-                    : 'bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm text-gray-700 dark:text-gray-100 rounded-3xl border border-white/60 dark:border-gray-700 shadow-sm'
+                    : 'glass-surface text-gray-700 dark:text-gray-100 rounded-3xl border border-white/60 dark:border-gray-700 shadow-sm'
                 }`}
               >
                 {renderMessageBody(msg, i)}
